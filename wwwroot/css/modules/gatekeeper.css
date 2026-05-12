@@ -1,0 +1,382 @@
+/* =============================================================
+   GATEKEEPER MODULE CSS — gatekeeper.css
+   Module Color: #DC2626 — Glassmorphic "Airlock" Design
+   ============================================================= */
+
+/* ── Airlock Split Screen ── */
+.gate-airlock {
+    display: flex;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0F172A 0%, #1a0a1e 50%, #0F172A 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.gate-airlock::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 50%, rgba(220, 38, 38, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 50%, rgba(29, 78, 216, 0.06) 0%, transparent 60%);
+    animation: aurora 15s ease-in-out infinite alternate;
+}
+
+@keyframes aurora {
+    0% { transform: rotate(0deg) scale(1); }
+    100% { transform: rotate(3deg) scale(1.05); }
+}
+
+/* ── Form Side (Left) ── */
+.gate-form-side {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+    z-index: 2;
+}
+
+.gate-form-container {
+    width: 100%;
+    max-width: 440px;
+    animation: fadeInUp 0.6s ease;
+}
+
+.gate-logo {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.gate-logo-icon {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, var(--gate-primary), #F87171);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin: 0 auto 16px;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.3);
+}
+
+.gate-logo h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, #fff, #94A3B8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.gate-logo p {
+    color: var(--text-muted-dark);
+    font-size: 0.9rem;
+    margin-top: 4px;
+}
+
+/* ── Glass Form Card ── */
+.gate-glass-form {
+    background: rgba(30, 41, 59, 0.5);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-xl);
+    padding: 36px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+}
+
+.gate-input-group {
+    margin-bottom: 20px;
+}
+
+.gate-input-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted-dark);
+    margin-bottom: 6px;
+}
+
+.gate-input {
+    width: 100%;
+    padding: 12px 16px;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    background: rgba(15, 23, 42, 0.6);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    outline: none;
+    transition: all var(--transition-normal);
+}
+
+.gate-input:focus {
+    border-color: var(--gate-primary);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.gate-input.input-error {
+    border-color: var(--danger);
+}
+
+/* ── Password Strength Meter ── */
+.strength-meter {
+    margin-top: 8px;
+}
+
+.strength-bar-bg {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.strength-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease, background-color 0.4s ease;
+}
+
+.strength-label {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 0.75rem;
+}
+
+/* ── Steps Wizard ── */
+.gate-steps {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 28px;
+}
+
+.gate-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gate-step-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    transition: all var(--transition-normal);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-muted-dark);
+    background: transparent;
+}
+
+.gate-step-dot.active {
+    border-color: var(--gate-primary);
+    background: var(--gate-primary);
+    color: white;
+    box-shadow: 0 0 12px rgba(220, 38, 38, 0.4);
+}
+
+.gate-step-dot.completed {
+    border-color: var(--success);
+    background: var(--success);
+    color: white;
+}
+
+.gate-step-line {
+    width: 40px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 1px;
+}
+
+.gate-step-line.active {
+    background: var(--gate-primary);
+}
+
+/* ── Auth Buttons ── */
+.btn-gate {
+    width: 100%;
+    padding: 13px;
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-gate-primary {
+    background: linear-gradient(135deg, var(--gate-primary), #EF4444);
+    color: white;
+    box-shadow: 0 6px 20px rgba(220, 38, 38, 0.35);
+}
+
+.btn-gate-primary:hover {
+    box-shadow: 0 8px 25px rgba(220, 38, 38, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-gate-primary:active { transform: scale(0.98); }
+
+.btn-gate-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-gate-outline {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.btn-gate-outline:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* ── OAuth Buttons ── */
+.gate-oauth {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-oauth {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+}
+
+.btn-oauth:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Divider ── */
+.gate-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 24px 0;
+    color: var(--text-muted-dark);
+    font-size: 0.8rem;
+}
+
+.gate-divider::before, .gate-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Tips Side (Right) ── */
+.gate-tips-side {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+    z-index: 2;
+}
+
+.gate-tip-card {
+    max-width: 380px;
+    text-align: center;
+}
+
+.gate-tip-icon {
+    font-size: 3rem;
+    margin-bottom: 24px;
+}
+
+.gate-tip-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.gate-tip-text {
+    color: var(--text-muted-dark);
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+/* ── Error Message ── */
+.gate-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    color: #FCA5A5;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gate-success {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: var(--radius-md);
+    padding: 10px 14px;
+    color: #6EE7B7;
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Footer Links ── */
+.gate-footer {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 0.85rem;
+    color: var(--text-muted-dark);
+}
+
+.gate-footer a {
+    color: var(--gate-primary);
+    font-weight: 500;
+}
+
+.gate-footer a:hover { text-decoration: underline; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .gate-tips-side { display: none; }
+    .gate-form-side { padding: 24px; }
+}
+
+@media (max-width: 500px) {
+    .gate-glass-form { padding: 24px; }
+    .gate-form-side { padding: 16px; }
+}

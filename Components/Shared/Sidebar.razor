@@ -1,0 +1,220 @@
+@inject IEnumerable<IModule> Modules
+@inject NavigationManager Navigation
+@inject BASTION.Services.Auth.AuthService AuthService
+
+<aside class="bastion-sidebar @(IsCollapsed ? "collapsed" : "")">
+    <!-- Logo -->
+    <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+            <i class="bi bi-shield-shaded"></i>
+        </div>
+        @if (!IsCollapsed)
+        {
+            <div class="sidebar-logo-text">
+                <span class="sidebar-brand">BASTION</span>
+                <span class="sidebar-tagline">Digital Fortress</span>
+            </div>
+        }
+    </div>
+
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+        @foreach (var module in Modules.Where(m => m.Name != "GateKeeper").OrderBy(m => m.Order))
+        {
+            var isActive = Navigation.Uri.Contains(module.RouteUrl == "/" ? Navigation.BaseUri : module.RouteUrl);
+            <a href="@module.RouteUrl"
+               class="sidebar-item @(isActive ? "active" : "")"
+               style="@(isActive ? $"--item-color: {module.PrimaryHex}" : "")">
+                <i class="bi @module.Icon sidebar-item-icon" style="@(isActive ? $"color: {module.PrimaryHex}" : "")"></i>
+                @if (!IsCollapsed)
+                {
+                    <span class="sidebar-item-text">@module.Name</span>
+                }
+            </a>
+        }
+    </nav>
+
+    <!-- Bottom Section -->
+    <div class="sidebar-bottom">
+        @if (!IsCollapsed)
+        {
+            <div class="sidebar-user-info">
+                <div class="sidebar-user-avatar">
+                    @AuthService.CurrentUser?.FullName?.Substring(0, 1).ToUpper()
+                </div>
+                <div class="sidebar-user-details">
+                    <span class="sidebar-user-name">@AuthService.CurrentUser?.FullName</span>
+                    <span class="sidebar-user-role badge-bastion @(AuthService.IsAdmin ? "badge-caution" : "badge-info")">
+                        @AuthService.CurrentUser?.Role
+                    </span>
+                </div>
+            </div>
+        }
+    </div>
+</aside>
+
+<style>
+    .bastion-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: var(--sidebar-width);
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border-right: 1px solid var(--glass-border);
+        display: flex;
+        flex-direction: column;
+        z-index: 200;
+        transition: width var(--transition-normal);
+        overflow: hidden;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+
+    .bastion-sidebar.collapsed {
+        width: var(--sidebar-collapsed);
+    }
+
+    /* ── Logo ── */
+    .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 18px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .sidebar-logo-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(135deg, var(--home-primary), #3B82F6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: white;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
+    }
+
+    .sidebar-brand {
+        font-size: 1.15rem;
+        font-weight: 800;
+        letter-spacing: 3px;
+        color: var(--text-primary);
+        display: block;
+    }
+
+    .sidebar-tagline {
+        font-size: 0.7rem;
+        color: var(--text-muted-dark);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    /* ── Nav Items ── */
+    .sidebar-nav {
+        flex: 1;
+        padding: 12px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        overflow-y: auto;
+    }
+
+    .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 11px 14px;
+        border-radius: var(--radius-md);
+        color: var(--text-muted-dark);
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all var(--transition-normal);
+        position: relative;
+    }
+
+    .sidebar-item:hover {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-primary);
+    }
+
+    .sidebar-item.active {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-primary);
+    }
+
+    .sidebar-item.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 60%;
+        background: var(--item-color, var(--home-primary));
+        border-radius: 0 3px 3px 0;
+    }
+
+    .sidebar-item-icon {
+        font-size: 1.15rem;
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    /* ── Bottom Section ── */
+    .sidebar-bottom {
+        padding: 16px;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .sidebar-user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .sidebar-user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--home-primary), #3B82F6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .sidebar-user-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: block;
+        color: var(--text-primary);
+    }
+
+    .sidebar-user-role {
+        font-size: 0.65rem;
+    }
+
+    /* ── Responsive ── */
+    @@media (max-width: 768px) {
+        .bastion-sidebar {
+            transform: translateX(-100%);
+        }
+        .bastion-sidebar:not(.collapsed) {
+            transform: translateX(0);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public bool IsCollapsed { get; set; }
+    [Parameter] public EventCallback OnToggle { get; set; }
+}
