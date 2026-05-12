@@ -1,0 +1,8 @@
+@using BASTION.Interfaces
+
+<!-- ModuleCard.razor — Reusable card component — accepts IModule, renders icon/score/link -->
+
+@code {
+    [Parameter]
+    public IModule Module { get; set; } = default!;
+}

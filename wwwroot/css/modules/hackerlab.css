@@ -1,0 +1,10 @@
+/* =============================================================
+   HACKERLAB MODULE CSS — hackerlab.css
+   Module Color: #7C3AED
+   ============================================================= */
+
+.module-hacker {
+    --hacker-primary: #7C3AED;
+    --hacker-bg: #4C1D95;
+    --hacker-glow: rgba(124, 58, 237, 0.3);
+}

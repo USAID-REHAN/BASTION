@@ -1,0 +1,10 @@
+/* =============================================================
+   CYBERSHIELD MODULE CSS — cybershield.css
+   Module Color: #0891B2
+   ============================================================= */
+
+.module-cyber {
+    --cyber-primary: #0891B2;
+    --cyber-bg: #164E63;
+    --cyber-glow: rgba(8, 145, 178, 0.3);
+}

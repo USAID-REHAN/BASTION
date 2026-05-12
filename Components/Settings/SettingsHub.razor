@@ -1,0 +1,354 @@
+@page "/settings"
+@rendermode InteractiveServer
+@inject BASTION.Services.Theme.ThemeService ThemeService
+@inject BASTION.Services.Sound.SoundService SoundService
+@inject BASTION.Services.Auth.AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>BASTION — Settings</PageTitle>
+
+<div class="settings-page">
+    <div class="settings-header">
+        <h1><i class="bi bi-gear" style="color: var(--settings-primary);"></i> Settings</h1>
+        <p>Personalise your BASTION experience</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="settings-tabs">
+        <button class="settings-tab @(_activeTab == "theme" ? "active" : "")" @onclick='() => _activeTab = "theme"'>
+            <i class="bi bi-palette"></i> Theme
+        </button>
+        <button class="settings-tab @(_activeTab == "sound" ? "active" : "")" @onclick='() => _activeTab = "sound"'>
+            <i class="bi bi-volume-up"></i> Sound
+        </button>
+        <button class="settings-tab @(_activeTab == "account" ? "active" : "")" @onclick='() => _activeTab = "account"'>
+            <i class="bi bi-person"></i> Account
+        </button>
+    </div>
+
+    <!-- Theme Tab -->
+    @if (_activeTab == "theme")
+    {
+        <div class="settings-section">
+            <!-- Dark/Light Mode -->
+            <div class="settings-card">
+                <div class="settings-card-title">Appearance</div>
+                <div class="settings-card-desc">Choose between dark and light mode</div>
+
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4><i class="bi bi-moon-stars"></i> Dark Mode</h4>
+                        <p>Use dark colour palette (default)</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked="@ThemeService.IsDarkMode" @onchange="ToggleDarkMode" />
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Color Picker -->
+            <div class="settings-card">
+                <div class="settings-card-title">Accent Colour</div>
+                <div class="settings-card-desc">
+                    @if (ThemeService.IsDarkMode)
+                    {
+                        <span>Colour is saved but only applied in <strong>Light Mode</strong></span>
+                    }
+                    else
+                    {
+                        <span>Pick a colour to personalise your interface</span>
+                    }
+                </div>
+
+                <div class="color-picker-area">
+                    <!-- Native Color Picker -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
+                        <input type="color" @bind="_stagedColor" @bind:event="oninput"
+                               style="width: 160px; height: 160px; border: 3px solid var(--glass-border); border-radius: 16px; cursor: pointer; padding: 4px;" />
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Click the wheel to pick a custom colour</span>
+                    </div>
+
+                    <!-- 8 Preset Swatches -->
+                    <div class="color-presets">
+                        @foreach (var swatch in _presetColors)
+                        {
+                            <div class="color-swatch @(_stagedColor.Equals(swatch, StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+                                 style="background: @swatch;"
+                                 @onclick="() => StageColor(swatch)"
+                                 title="@swatch">
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Preview + Apply + Reset -->
+                    <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap;">
+                        <div class="current-color-preview" style="flex: 1; min-width: 150px;">
+                            <div class="current-color-dot" style="background: @_stagedColor;"></div>
+                            <span class="current-color-hex font-mono">@_stagedColor.ToUpper()</span>
+                            @if (!_stagedColor.Equals(ThemeService.AccentColor, StringComparison.OrdinalIgnoreCase))
+                            {
+                                <span class="badge-bastion badge-caution" style="margin-left: 8px;">Unsaved</span>
+                            }
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-bastion btn-primary-bastion"
+                                    style="padding: 10px 20px; white-space: nowrap;"
+                                    @onclick="ApplyColor"
+                                    disabled="@_stagedColor.Equals(ThemeService.AccentColor, StringComparison.OrdinalIgnoreCase)">
+                                <i class="bi bi-check-lg"></i> Apply
+                            </button>
+                            <button class="btn-bastion btn-ghost-bastion"
+                                    style="padding: 10px 20px; white-space: nowrap;"
+                                    @onclick="ResetColor"
+                                    disabled="@ThemeService.AccentColor.Equals(DEFAULT_COLOR, StringComparison.OrdinalIgnoreCase)">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Sound Tab -->
+    @if (_activeTab == "sound")
+    {
+        <div class="settings-section">
+            <div class="settings-card">
+                <div class="settings-card-title">Sound Effects</div>
+                <div class="settings-card-desc">Control audio feedback in BASTION</div>
+
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <h4><i class="bi bi-volume-up"></i> Enable Sound</h4>
+                        <p>Play a chime on successful analysis and login</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked="@SoundService.IsSoundEnabled" @onchange="ToggleSound" />
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+                        <i class="bi bi-music-note-beamed"></i> Preview the BASTION chime sound:
+                    </p>
+                    <button class="sound-preview-btn" @onclick="PreviewSound">
+                        <i class="bi bi-play-circle"></i> Play Preview
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Account Tab -->
+    @if (_activeTab == "account")
+    {
+        <div class="settings-section">
+            <!-- Profile Info -->
+            <div class="settings-card">
+                <div class="settings-card-title">Profile Information</div>
+                <div class="settings-card-desc">Your account details</div>
+
+                <div style="display: grid; gap: 14px;">
+                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-current); font-size: 0.9rem;">
+                        <span style="color: var(--text-muted);">Full Name</span>
+                        <span style="font-weight: 600;">@AuthService.CurrentUser?.FullName</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-current); font-size: 0.9rem;">
+                        <span style="color: var(--text-muted);">Email</span>
+                        <span style="font-weight: 600;">@AuthService.CurrentUser?.Email</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-current); font-size: 0.9rem;">
+                        <span style="color: var(--text-muted);">Role</span>
+                        <span class="badge-bastion @(AuthService.IsAdmin ? "badge-caution" : "badge-info")">
+                            @AuthService.CurrentUser?.Role
+                        </span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 0.9rem;">
+                        <span style="color: var(--text-muted);">City</span>
+                        <span style="font-weight: 600;">@(AuthService.CurrentUser?.City ?? "Not set")</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Change Password -->
+            <div class="settings-card">
+                <div class="settings-card-title">Change Password</div>
+                <div class="settings-card-desc">Update your account password</div>
+
+                @if (!string.IsNullOrEmpty(_pwMessage))
+                {
+                    <div class="@(_pwSuccess ? "gate-success" : "gate-error")" style="margin-bottom: 16px;">
+                        <i class="bi @(_pwSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i> @_pwMessage
+                    </div>
+                }
+
+                <div class="gate-input-group">
+                    <label>Current Password</label>
+                    <input type="password" class="gate-input" @bind="_currentPw" placeholder="Enter current password" />
+                </div>
+                <div class="gate-input-group">
+                    <label>New Password</label>
+                    <input type="password" class="gate-input" @bind="_newPw" placeholder="Enter new password" />
+                </div>
+                <div class="gate-input-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" class="gate-input" @bind="_confirmNewPw" placeholder="Re-enter new password" />
+                </div>
+                <button class="btn-bastion btn-primary-bastion" @onclick="ChangePassword"
+                        disabled="@(string.IsNullOrEmpty(_currentPw) || _newPw?.Length < 8 || _newPw != _confirmNewPw)">
+                    <i class="bi bi-key"></i> Update Password
+                </button>
+            </div>
+
+            <!-- Active Sessions -->
+            <div class="settings-card">
+                <div class="settings-card-title">Active Sessions</div>
+                <div class="settings-card-desc">Manage your logged-in devices</div>
+
+                @foreach (var session in AuthService.GetActiveSessions())
+                {
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-current);">
+                        <div>
+                            <div style="font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                                <i class="bi bi-laptop"></i> @session.Device
+                                @if (session.IsActive)
+                                {
+                                    <span class="badge-bastion badge-safe">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge-bastion badge-danger">Revoked</span>
+                                }
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                @session.Location · @session.LoginTime.ToString("MMM dd, yyyy h:mm tt")
+                            </div>
+                        </div>
+                        @if (session.IsActive)
+                        {
+                            <button class="btn-bastion btn-ghost-bastion" style="font-size: 0.8rem; padding: 5px 12px;"
+                                    @onclick="() => RevokeSession(session)">
+                                Revoke
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="account-danger-zone">
+                <h4><i class="bi bi-exclamation-triangle"></i> Danger Zone</h4>
+                <p>Permanently delete your account. This action cannot be undone.</p>
+                <button class="btn-bastion btn-danger-bastion" style="font-size: 0.85rem; padding: 8px 16px;">
+                    <i class="bi bi-trash3"></i> Delete Account
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string _activeTab = "theme";
+
+    // Default accent color
+    private const string DEFAULT_COLOR = "#1D4ED8";
+
+    // Color presets (8 swatches per proposal)
+    private readonly string[] _presetColors = {
+        "#1D4ED8", "#DC2626", "#059669", "#7C3AED",
+        "#0891B2", "#D97706", "#DB2777", "#475569"
+    };
+
+    // Staged color (preview before applying)
+    private string _stagedColor = DEFAULT_COLOR;
+
+    // Password change
+    private string? _currentPw;
+    private string? _newPw;
+    private string? _confirmNewPw;
+    private string? _pwMessage;
+    private bool _pwSuccess;
+
+    protected override void OnInitialized()
+    {
+        _stagedColor = ThemeService.AccentColor;
+    }
+
+    private void StageColor(string hex)
+    {
+        _stagedColor = hex;
+    }
+
+    private async Task ApplyColor()
+    {
+        await ThemeService.SetAccentColor(_stagedColor);
+    }
+
+    private async Task ResetColor()
+    {
+        _stagedColor = DEFAULT_COLOR;
+        await ThemeService.SetAccentColor(DEFAULT_COLOR);
+    }
+
+    private async Task SelectColor(string hex)
+    {
+        _stagedColor = hex;
+        await ThemeService.SetAccentColor(hex);
+    }
+
+    private async Task ToggleDarkMode(ChangeEventArgs e)
+    {
+        var isDark = (bool)(e.Value ?? true);
+        await ThemeService.SetDarkMode(isDark);
+    }
+
+    private async Task ToggleSound(ChangeEventArgs e)
+    {
+        var enabled = (bool)(e.Value ?? true);
+        await SoundService.SetSoundEnabled(enabled);
+    }
+
+    private async Task PreviewSound()
+    {
+        await SoundService.PlayPreview();
+    }
+
+    private void ChangePassword()
+    {
+        _pwMessage = null;
+        if (string.IsNullOrEmpty(_newPw) || _newPw.Length < 8)
+        {
+            _pwMessage = "New password must be at least 8 characters.";
+            _pwSuccess = false;
+            return;
+        }
+        if (_newPw != _confirmNewPw)
+        {
+            _pwMessage = "New passwords do not match.";
+            _pwSuccess = false;
+            return;
+        }
+
+        var result = AuthService.ChangePassword(_currentPw!, _newPw);
+        if (result)
+        {
+            _pwMessage = "Password updated successfully!";
+            _pwSuccess = true;
+            _currentPw = _newPw = _confirmNewPw = "";
+        }
+        else
+        {
+            _pwMessage = "Current password is incorrect.";
+            _pwSuccess = false;
+        }
+    }
+
+    private void RevokeSession(SessionInfo session)
+    {
+        AuthService.RevokeSession(session);
+    }
+}

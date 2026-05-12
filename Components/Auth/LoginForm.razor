@@ -1,0 +1,184 @@
+@page "/login"
+@rendermode InteractiveServer
+@layout BASTION.Components.Layout.MainLayout
+@inject BASTION.Services.Auth.AuthService AuthService
+@inject BASTION.Services.Sound.SoundService SoundService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="gate-airlock">
+    <!-- Form Side (Left) -->
+    <div class="gate-form-side">
+        <div class="gate-form-container">
+            <!-- Logo -->
+            <div class="gate-logo">
+                <div class="gate-logo-icon">
+                    <i class="bi bi-shield-lock-fill" style="color: white;"></i>
+                </div>
+                <h1>BASTION</h1>
+                <p>Your Digital Fortress</p>
+            </div>
+
+            <!-- Glass Form -->
+            <div class="gate-glass-form">
+                <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px;">Welcome Back</h3>
+                <p style="color: var(--text-muted-dark); font-size: 0.85rem; margin-bottom: 24px;">Sign in to your account</p>
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="gate-error" id="login-error">
+                        <i class="bi bi-exclamation-circle"></i>
+                        @_errorMessage
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(_successMessage))
+                {
+                    <div class="gate-success">
+                        <i class="bi bi-check-circle"></i>
+                        @_successMessage
+                    </div>
+                }
+
+                <div>
+                    <div class="gate-input-group">
+                        <label for="login-email">Email Address</label>
+                        <input id="login-email" type="email" class="gate-input" placeholder="you@example.com"
+                               @bind="_loginModel.Email" @bind:event="oninput" />
+                    </div>
+
+                    <div class="gate-input-group">
+                        <label for="login-password">Password</label>
+                        <div style="position: relative;">
+                            <input id="login-password" type="@(_showPassword ? "text" : "password")" class="gate-input"
+                                   placeholder="Enter your password" @bind="_loginModel.Password" @bind:event="oninput" />
+                            <button type="button" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted-dark); cursor: pointer;"
+                                    @onclick="() => _showPassword = !_showPassword">
+                                <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 0.85rem;">
+                        <label style="display: flex; align-items: center; gap: 6px; color: var(--text-muted-dark); cursor: pointer;">
+                            <input type="checkbox" @bind="_loginModel.RememberMe" style="accent-color: var(--gate-primary);" /> Remember me
+                        </label>
+                        <a href="#" style="color: var(--gate-primary);">Forgot password?</a>
+                    </div>
+
+                    <button type="button" class="btn-gate btn-gate-primary" disabled="@_isLoading" @onclick="HandleLogin">
+                        @if (_isLoading)
+                        {
+                            <span>Signing in...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-box-arrow-in-right"></i>
+                            <span>Sign In</span>
+                        }
+                    </button>
+                </div>
+
+                <!-- OAuth -->
+                <div class="gate-divider">or continue with</div>
+                <div class="gate-oauth">
+                    <button class="btn-oauth" disabled title="OAuth requires backend configuration">
+                        <i class="bi bi-google"></i> Google
+                    </button>
+                    <button class="btn-oauth" disabled title="OAuth requires backend configuration">
+                        <i class="bi bi-microsoft"></i> Microsoft
+                    </button>
+                </div>
+
+                <div class="gate-footer">
+                    Don't have an account? <a href="/register">Create one</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips Side (Right) -->
+    <div class="gate-tips-side">
+        <div class="gate-tip-card">
+            <div class="gate-tip-icon">🛡️</div>
+            <h3 class="gate-tip-title">@_tips[_currentTip].Title</h3>
+            <p class="gate-tip-text">@_tips[_currentTip].Text</p>
+            <div style="display: flex; justify-content: center; gap: 6px; margin-top: 24px;">
+                @for (int i = 0; i < _tips.Count; i++)
+                {
+                    var idx = i;
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: @(idx == _currentTip ? "var(--gate-primary)" : "rgba(255,255,255,0.15)"); transition: background 0.3s;"></div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel _loginModel = new();
+    private string? _errorMessage;
+    private string? _successMessage;
+    private bool _showPassword;
+    private bool _isLoading;
+    private int _currentTip;
+    private System.Threading.Timer? _tipTimer;
+
+    private readonly List<(string Title, string Text)> _tips = new()
+    {
+        ("Protect Your Devices", "BASTION scans your system for vulnerabilities, open ports, and suspicious processes — all from your browser."),
+        ("Analyze Contracts", "Upload any legal document and let AI highlight dangerous clauses, missing protections, and hidden obligations."),
+        ("Detect Financial Fraud", "Scan URLs, messages, and payment pages for scams targeting Pakistani citizens — JazzCash, EasyPaisa, and more."),
+        ("Learn Security Skills", "Play interactive games across 5 security domains. Earn XP, unlock badges, and climb the ranks.")
+    };
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        _tipTimer = new System.Threading.Timer(_ =>
+        {
+            _currentTip = (_currentTip + 1) % _tips.Count;
+            InvokeAsync(StateHasChanged);
+        }, null, 5000, 5000);
+    }
+
+    private async Task HandleLogin()
+    {
+        _errorMessage = null;
+        _successMessage = null;
+        _isLoading = true;
+        StateHasChanged();
+
+        await Task.Delay(800); // Simulate network delay
+
+        var result = AuthService.Login(_loginModel.Email, _loginModel.Password);
+
+        if (result.Success)
+        {
+            _successMessage = result.Message;
+            await SoundService.PlayChime();
+            StateHasChanged();
+            await Task.Delay(600);
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        else
+        {
+            _errorMessage = result.Message;
+            _isLoading = false;
+            try { await JS.InvokeVoidAsync("bastionGateKeeper.shakeElement", "login-error"); } catch { }
+        }
+    }
+
+    public void Dispose() => _tipTimer?.Dispose();
+
+    private class LoginModel
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+        public bool RememberMe { get; set; }
+    }
+}

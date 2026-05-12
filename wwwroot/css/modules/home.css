@@ -1,0 +1,303 @@
+/* =============================================================
+   HOMESCREEN MODULE CSS — home.css
+   Module Color: #1D4ED8
+   ============================================================= */
+
+.home-dashboard {
+    padding: 28px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ── Welcome Header ── */
+.home-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    animation: fadeInUp 0.5s ease;
+}
+
+.home-greeting h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+}
+
+.home-greeting p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.home-clock {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+}
+
+/* ── Overall Score ── */
+.home-score-section {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.home-score-card {
+    flex: 0 0 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    animation: fadeInUp 0.5s ease 0.1s both;
+}
+
+.home-score-gauge {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    margin-bottom: 12px;
+}
+
+.home-score-gauge svg {
+    transform: rotate(-90deg);
+    width: 130px;
+    height: 130px;
+}
+
+.home-score-gauge .gauge-bg {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 8;
+}
+
+.home-score-gauge .gauge-fill {
+    fill: none;
+    stroke: var(--home-primary);
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1.5s ease-in-out;
+}
+
+.home-score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-current);
+}
+
+.home-score-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* ── Quick Stats Row ── */
+.home-stats-row {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    animation: fadeInUp 0.5s ease 0.2s both;
+}
+
+.home-stat-card {
+    padding: 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    transition: transform var(--transition-normal);
+}
+
+.home-stat-card:hover { transform: translateY(-2px); }
+
+.home-stat-icon {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.home-stat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+}
+
+.home-stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* ── Module Cards Grid ── */
+.home-modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.module-card {
+    padding: 24px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    text-decoration: none;
+    color: var(--text-current);
+    position: relative;
+    overflow: hidden;
+}
+
+.module-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.module-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.module-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.module-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    color: white;
+}
+
+.module-card-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.module-card-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.module-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.module-card-score {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.module-card-arrow {
+    font-size: 1.2rem;
+    opacity: 0.4;
+    transition: all var(--transition-normal);
+}
+
+.module-card:hover .module-card-arrow {
+    opacity: 1;
+    transform: translateX(4px);
+}
+
+/* ── Activity Feed ── */
+.home-activity {
+    animation: fadeInUp 0.5s ease 0.4s both;
+}
+
+.home-activity h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    transition: background var(--transition-fast);
+}
+
+.activity-item:hover { background: rgba(255, 255, 255, 0.04); }
+
+.activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.activity-text {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.activity-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+/* ── Admin Banner ── */
+.admin-banner {
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: var(--radius-md);
+    padding: 10px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--warning);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .home-dashboard { padding: 16px; }
+    .home-score-section { flex-direction: column; }
+    .home-score-card { flex: auto; }
+    .home-stats-row { grid-template-columns: 1fr; }
+    .home-modules-grid { grid-template-columns: 1fr; }
+    .home-header { flex-direction: column; gap: 12px; }
+}

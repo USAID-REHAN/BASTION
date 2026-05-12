@@ -1,0 +1,122 @@
+<!-- Toast.razor — In-app notification — accepts message + severity. Used by all modules. -->
+
+@if (_toasts.Any())
+{
+    @foreach (var toast in _toasts)
+    {
+        <div class="bastion-toast toast-@toast.Severity animate-fade-in-up" @key="toast.Id">
+            <div class="toast-icon">
+                <i class="bi @GetIcon(toast.Severity)"></i>
+            </div>
+            <div class="toast-body">
+                <strong class="toast-title">@GetTitle(toast.Severity)</strong>
+                <span class="toast-message">@toast.Message</span>
+            </div>
+            <button class="toast-close" @onclick="() => RemoveToast(toast)">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+    }
+}
+
+<style>
+    .bastion-toast {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 18px;
+        border-radius: var(--radius-md);
+        min-width: 320px;
+        max-width: 420px;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .toast-info {
+        background: rgba(59, 130, 246, 0.12);
+        border-color: rgba(59, 130, 246, 0.25);
+    }
+    .toast-success {
+        background: rgba(16, 185, 129, 0.12);
+        border-color: rgba(16, 185, 129, 0.25);
+    }
+    .toast-warning {
+        background: rgba(245, 158, 11, 0.12);
+        border-color: rgba(245, 158, 11, 0.25);
+    }
+    .toast-danger {
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(239, 68, 68, 0.25);
+    }
+
+    .toast-icon { font-size: 1.2rem; padding-top: 1px; }
+    .toast-info .toast-icon { color: var(--info); }
+    .toast-success .toast-icon { color: var(--success); }
+    .toast-warning .toast-icon { color: var(--warning); }
+    .toast-danger .toast-icon { color: var(--danger); }
+
+    .toast-body { flex: 1; }
+    .toast-title { display: block; font-size: 0.85rem; margin-bottom: 2px; }
+    .toast-message { font-size: 0.82rem; color: var(--text-muted); }
+
+    .toast-close {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 2px;
+        font-size: 1rem;
+    }
+</style>
+
+@code {
+    private readonly List<ToastItem> _toasts = new();
+
+    public void Show(string message, string severity = "info")
+    {
+        var toast = new ToastItem
+        {
+            Id = Guid.NewGuid(),
+            Message = message,
+            Severity = severity
+        };
+        _toasts.Add(toast);
+        StateHasChanged();
+
+        _ = Task.Delay(4000).ContinueWith(_ =>
+        {
+            InvokeAsync(() => { RemoveToast(toast); });
+        });
+    }
+
+    private void RemoveToast(ToastItem toast)
+    {
+        _toasts.Remove(toast);
+        StateHasChanged();
+    }
+
+    private string GetIcon(string severity) => severity switch
+    {
+        "success" => "bi-check-circle-fill",
+        "warning" => "bi-exclamation-triangle-fill",
+        "danger" => "bi-x-octagon-fill",
+        _ => "bi-info-circle-fill"
+    };
+
+    private string GetTitle(string severity) => severity switch
+    {
+        "success" => "Success",
+        "warning" => "Warning",
+        "danger" => "Error",
+        _ => "Info"
+    };
+
+    private class ToastItem
+    {
+        public Guid Id { get; set; }
+        public string Message { get; set; } = "";
+        public string Severity { get; set; } = "info";
+    }
+}

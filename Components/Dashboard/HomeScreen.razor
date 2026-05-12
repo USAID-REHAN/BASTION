@@ -1,0 +1,161 @@
+@page "/"
+@rendermode InteractiveServer
+@inject IEnumerable<IModule> Modules
+@inject BASTION.Services.Auth.AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>BASTION — Dashboard</PageTitle>
+
+<div class="home-dashboard">
+    <!-- Welcome Header -->
+    <div class="home-header">
+        <div class="home-greeting">
+            <h1>Welcome back, @AuthService.CurrentUser?.FullName?.Split(' ')[0] 👋</h1>
+            <p>Here's your protection overview for today</p>
+        </div>
+        <div class="home-clock" id="dashboard-clock"></div>
+    </div>
+
+    <!-- Score + Stats Row -->
+    <div class="home-score-section">
+        <!-- Overall Protection Score -->
+        <div class="home-score-card glass-card" style="cursor: default;">
+            <div class="home-score-gauge">
+                <svg viewBox="0 0 120 120">
+                    <circle class="gauge-bg" cx="60" cy="60" r="54" />
+                    <circle class="gauge-fill" cx="60" cy="60" r="54"
+                            id="score-gauge-ring"
+                            stroke-dasharray="339.29"
+                            stroke-dashoffset="339.29" />
+                </svg>
+                <div class="home-score-value" id="score-value">0</div>
+            </div>
+            <div class="home-score-label">Overall Protection</div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="home-stats-row">
+            <div class="home-stat-card glass-card" style="cursor: default;">
+                <div class="home-stat-icon" style="color: var(--cyber-primary);">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div class="home-stat-value" style="color: var(--cyber-primary);">@_activeModules</div>
+                <div class="home-stat-label">Active Modules</div>
+            </div>
+            <div class="home-stat-card glass-card" style="cursor: default;">
+                <div class="home-stat-icon" style="color: var(--success);">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="home-stat-value" style="color: var(--success);">@_scansCompleted</div>
+                <div class="home-stat-label">Scans Completed</div>
+            </div>
+            <div class="home-stat-card glass-card" style="cursor: default;">
+                <div class="home-stat-icon" style="color: var(--hacker-primary);">
+                    <i class="bi bi-trophy"></i>
+                </div>
+                <div class="home-stat-value" style="color: var(--hacker-primary);">@_userRank</div>
+                <div class="home-stat-label">Current Rank</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Cards Grid -->
+    <h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+        <i class="bi bi-grid-1x2"></i> Protection Modules
+    </h2>
+    <div class="home-modules-grid">
+        @foreach (var module in Modules.Where(m => m.Name != "GateKeeper" && m.Name != "Dashboard").OrderBy(m => m.Order))
+        {
+            <a href="@module.RouteUrl" class="module-card animate-fade-in-up @GetDelayClass(module.Order)" style="--item-color: @module.PrimaryHex;">
+                <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: @module.PrimaryHex; border-radius: var(--radius-lg) var(--radius-lg) 0 0;"></div>
+                <div class="module-card-header">
+                    <div class="module-card-icon" style="background: linear-gradient(135deg, @module.PrimaryHex, @(module.PrimaryHex)aa);">
+                        <i class="bi @module.Icon"></i>
+                    </div>
+                    <div class="module-card-name">@module.Name</div>
+                </div>
+                <div class="module-card-desc">@module.Description</div>
+                <div class="module-card-footer">
+                    <span class="module-card-score" style="color: @module.PrimaryHex;">
+                        <i class="bi bi-speedometer2"></i> Ready
+                    </span>
+                    <span class="module-card-arrow">→</span>
+                </div>
+            </a>
+        }
+    </div>
+
+    <!-- Activity Feed -->
+    <div class="home-activity">
+        <h2><i class="bi bi-activity"></i> Recent Activity</h2>
+        <div class="activity-list">
+            @foreach (var activity in _activities)
+            {
+                <div class="activity-item">
+                    <div class="activity-dot" style="background: @activity.Color;"></div>
+                    <div class="activity-text">@activity.Text</div>
+                    <div class="activity-time">@activity.Time</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private int _activeModules;
+    private int _scansCompleted;
+    private string _userRank = "Civilian";
+    private List<ActivityItem> _activities = new();
+    private bool _gaugeAnimated;
+
+    protected override void OnInitialized()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        _activeModules = Modules.Count(m => m.Name != "GateKeeper" && m.Name != "Dashboard");
+        _scansCompleted = 0;
+
+        _activities = new List<ActivityItem>
+        {
+            new() { Text = "Signed in successfully", Color = "var(--success)", Time = "Just now" },
+            new() { Text = "Account created on BASTION", Color = "var(--info)", Time = DateTime.Now.ToString("MMM dd") },
+            new() { Text = "Welcome to your Digital Fortress!", Color = "var(--home-primary)", Time = DateTime.Now.ToString("MMM dd") }
+        };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AuthService.IsAuthenticated && !_gaugeAnimated)
+        {
+            _gaugeAnimated = true;
+            try
+            {
+                await JS.InvokeVoidAsync("bastionHome.startClock", "dashboard-clock");
+                await JS.InvokeVoidAsync("bastionHome.animateGauge", "score-gauge-ring", 25);
+                await JS.InvokeVoidAsync("bastionAnimate.countUp", "score-value", 25, 1500);
+            }
+            catch { /* JS not ready */ }
+        }
+    }
+
+    private string GetDelayClass(int order) => order switch
+    {
+        <= 3 => "delay-1",
+        <= 4 => "delay-2",
+        <= 5 => "delay-3",
+        <= 6 => "delay-4",
+        _ => "delay-5"
+    };
+
+    private class ActivityItem
+    {
+        public string Text { get; set; } = "";
+        public string Color { get; set; } = "";
+        public string Time { get; set; } = "";
+    }
+}
