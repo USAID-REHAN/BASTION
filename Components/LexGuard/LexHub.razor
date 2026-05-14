@@ -1,9 +1,372 @@
 @page "/lexguard"
+@rendermode InteractiveServer
+@using BASTION.Models
+@using BASTION.Components.LexGuard
+@inject BASTION.Services.Legal.DocumentAnalysisService AnalysisService
+@inject BASTION.Services.Legal.PdfReportService PdfService
+@inject BASTION.Services.Auth.AuthService AuthService
+@inject BASTION.Data.BastionDbContext Db
+@inject IJSRuntime JS
 
-<!-- LexHub.razor — LexGuard split-view layout — document left, analysis right -->
+<PageTitle>BASTION — LexGuard</PageTitle>
 
-<h2>LexGuard — Document Protection</h2>
+<div class="lex-page">
+    <!-- Header -->
+    <div class="lex-page-header">
+        <span class="lex-icon">📜</span>
+        <h1>LexGuard</h1>
+    </div>
+
+    <!-- Tabs -->
+    <div class="lex-tabs">
+        <button class="lex-tab @(_activeTab == "analyze" ? "active" : "")"
+                @onclick='() => SwitchTab("analyze")'>
+            <i class="bi bi-search"></i> Analyze
+        </button>
+        <button class="lex-tab @(_activeTab == "history" ? "active" : "")"
+                @onclick='() => SwitchTab("history")'>
+            <i class="bi bi-clock-history"></i> History
+            @if (_historyCount > 0)
+            {
+                <span class="badge-bastion badge-info" style="font-size: 0.65rem;">@_historyCount</span>
+            }
+        </button>
+    </div>
+
+    @* ═══════════ ANALYZE TAB ═══════════ *@
+    @if (_activeTab == "analyze")
+    {
+        @if (_state == PageState.Upload)
+        {
+            <DocumentUploader OnFileUploaded="HandleFileUpload" />
+        }
+        else if (_state == PageState.Processing)
+        {
+            <div class="lex-processing">
+                <div class="lex-processing-spinner"></div>
+                <h3>Analyzing your document...</h3>
+                <p>LexGuard AI is reviewing clauses, obligations, and risks</p>
+                <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
+                    <i class="bi bi-file-text"></i> @_currentFileName
+                </p>
+            </div>
+        }
+        else if (_state == PageState.Error)
+        {
+            <div class="lex-error">
+                <i class="bi bi-exclamation-triangle"></i>
+                <div>
+                    <strong>Analysis Failed</strong>
+                    <p style="margin-top: 4px;">@_errorMessage</p>
+                </div>
+            </div>
+            <div style="margin-top: 16px;">
+                <button class="btn-lex btn-lex-primary" @onclick="ResetToUpload">
+                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                </button>
+            </div>
+        }
+        else if (_state == PageState.Results && _currentResult != null)
+        {
+            <div class="lex-results" id="lex-results">
+                <!-- Results Header -->
+                <div class="lex-results-header">
+                    <div class="doc-info">
+                        <i class="bi @(_currentFileType == "pdf" ? "bi-file-earmark-pdf" : "bi-file-earmark-word")"
+                           style="font-size: 1.5rem; color: #D97706;"></i>
+                        <div>
+                            <div class="doc-name">@_currentFileName</div>
+                            <div class="doc-meta">
+                                @_currentFileType.ToUpper() · @FormatSize(_currentFileSize)
+                                · Analyzed @_currentAnalyzedAt.ToString("dd MMM yyyy, HH:mm")
+                            </div>
+                        </div>
+                    </div>
+                    <div class="lex-results-actions">
+                        <button class="btn-lex btn-lex-primary" @onclick="DownloadPdfReport" disabled="@_isGeneratingPdf">
+                            @if (_isGeneratingPdf)
+                            {
+                                <span class="lex-processing-spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-file-earmark-pdf"></i>
+                            }
+                            Generate PDF Report
+                        </button>
+                        <button class="btn-lex btn-lex-ghost" @onclick="ResetToUpload">
+                            <i class="bi bi-plus-circle"></i> New Analysis
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="lex-stats-row">
+                    <div class="lex-stat">
+                        <div class="lex-stat-value">@_currentResult.Clauses.Count</div>
+                        <div class="lex-stat-label">Clauses Found</div>
+                    </div>
+                    <div class="lex-stat">
+                        <div class="lex-stat-value" style="color: #EF4444;">
+                            @_currentResult.Clauses.Count(c => c.RiskLevel.ToLower() == "danger")
+                        </div>
+                        <div class="lex-stat-label">Danger Flags</div>
+                    </div>
+                    <div class="lex-stat">
+                        <div class="lex-stat-value" style="color: #F59E0B;">
+                            @_currentResult.Obligations.Count
+                        </div>
+                        <div class="lex-stat-label">Obligations</div>
+                    </div>
+                    <div class="lex-stat">
+                        <div class="lex-stat-value" style="color: #3B82F6;">
+                            @_currentResult.MissingClauses.Count
+                        </div>
+                        <div class="lex-stat-label">Missing Clauses</div>
+                    </div>
+                </div>
+
+                <!-- Summary + Risk Gauge -->
+                <div class="lex-card">
+                    <div class="lex-card-title">
+                        <i class="bi bi-card-text"></i> Executive Summary
+                    </div>
+                    <div class="lex-summary-grid">
+                        <RiskScoreGauge Score="@_currentResult.RiskScore"
+                                        RiskLevel="@_currentResult.OverallRiskLevel" />
+                        <div class="lex-summary-text">
+                            @_currentResult.Summary
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clause Analysis -->
+                <div class="lex-card">
+                    <div class="lex-card-title">
+                        <i class="bi bi-list-check"></i> Clause-by-Clause Analysis
+                        <span style="margin-left: auto; font-size: 0.8rem; font-weight: 400; color: var(--text-muted);">
+                            Click to expand
+                        </span>
+                    </div>
+                    <ClauseHighlighter Clauses="@_currentResult.Clauses" />
+                </div>
+
+                <!-- Obligations Timeline -->
+                @if (_currentResult.Obligations.Any())
+                {
+                    <div class="lex-card">
+                        <div class="lex-card-title">
+                            <i class="bi bi-calendar-event"></i> Obligations & Deadlines
+                        </div>
+                        <ObligationTimeline Obligations="@_currentResult.Obligations" />
+                    </div>
+                }
+
+                <!-- Missing Clauses -->
+                @if (_currentResult.MissingClauses.Any())
+                {
+                    <div class="lex-card">
+                        <div class="lex-card-title">
+                            <i class="bi bi-shield-exclamation"></i> Missing Protective Clauses
+                        </div>
+                        <div class="lex-missing-list">
+                            @foreach (var missing in _currentResult.MissingClauses)
+                            {
+                                <div class="lex-missing-item @missing.Importance.ToLower()">
+                                    <div class="lex-missing-dot"></div>
+                                    <div>
+                                        <div class="lex-missing-title">
+                                            @missing.Title
+                                            <span class="lex-missing-importance">@missing.Importance.ToUpper()</span>
+                                        </div>
+                                        <div class="lex-missing-explanation">@missing.Explanation</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    @* ═══════════ HISTORY TAB ═══════════ *@
+    @if (_activeTab == "history")
+    {
+        <AnalysisHistory Analyses="@_historyList"
+                         OnViewAnalysis="ViewHistoricalAnalysis"
+                         OnDownloadPdf="DownloadHistoricalPdf"
+                         OnDeleteAnalysis="DeleteAnalysis" />
+    }
+</div>
 
 @code {
-    // TODO: Split-view layout: document viewer on left, AI analysis panel on right
+    private enum PageState { Upload, Processing, Results, Error }
+
+    private string _activeTab = "analyze";
+    private PageState _state = PageState.Upload;
+    private string? _errorMessage;
+    private bool _isGeneratingPdf;
+
+    // Current analysis
+    private AnalysisResult? _currentResult;
+    private string _currentFileName = string.Empty;
+    private string _currentFileType = string.Empty;
+    private long _currentFileSize;
+    private DateTime _currentAnalyzedAt;
+    private int? _currentRecordId;
+
+    // History
+    private List<LexGuardAnalysis> _historyList = new();
+    private int _historyCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHistory();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("bastionLexGuard.initDragDrop", "lex-drop-zone");
+        }
+    }
+
+    // ── Tab switching ──
+
+    private async Task SwitchTab(string tab)
+    {
+        _activeTab = tab;
+        if (tab == "history")
+            await LoadHistory();
+    }
+
+    // ── File Upload + Analysis ──
+
+    private async Task HandleFileUpload((Stream Stream, string FileName, string FileType, long FileSize) args)
+    {
+        _state = PageState.Processing;
+        _currentFileName = args.FileName;
+        _currentFileType = args.FileType;
+        _currentFileSize = args.FileSize;
+        _errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var userId = AuthService.CurrentUser?.Email ?? "anonymous";
+            var (result, record) = await AnalysisService.AnalyzeDocumentAsync(
+                args.Stream, args.FileName, args.FileType, args.FileSize, userId);
+
+            _currentResult = result;
+            _currentAnalyzedAt = record.AnalyzedAt;
+            _currentRecordId = record.Id;
+            _state = PageState.Results;
+            _historyCount++;
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+            _state = PageState.Error;
+        }
+
+        StateHasChanged();
+    }
+
+    // ── PDF Report ──
+
+    private async Task DownloadPdfReport()
+    {
+        if (_currentResult == null) return;
+        _isGeneratingPdf = true;
+        StateHasChanged();
+
+        try
+        {
+            var pdfBytes = PdfService.GenerateReport(_currentResult, _currentFileName, _currentAnalyzedAt);
+            var base64 = Convert.ToBase64String(pdfBytes);
+            var reportName = $"LexGuard_Report_{Path.GetFileNameWithoutExtension(_currentFileName)}_{_currentAnalyzedAt:yyyyMMdd}.pdf";
+
+            await JS.InvokeVoidAsync("bastionLexGuard.downloadFile", reportName, "application/pdf", base64);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"PDF generation failed: {ex.Message}";
+        }
+
+        _isGeneratingPdf = false;
+        StateHasChanged();
+    }
+
+    // ── History ──
+
+    private async Task LoadHistory()
+    {
+        var userId = AuthService.CurrentUser?.Email ?? "anonymous";
+        _historyList = Db.LexGuardAnalyses
+            .Where(a => a.UserId == userId)
+            .OrderByDescending(a => a.AnalyzedAt)
+            .Take(50)
+            .ToList();
+        _historyCount = _historyList.Count;
+    }
+
+    private void ViewHistoricalAnalysis(LexGuardAnalysis record)
+    {
+        var result = AnalysisService.DeserializeAnalysis(record);
+        if (result != null)
+        {
+            _currentResult = result;
+            _currentFileName = record.DocumentName;
+            _currentFileType = record.DocumentType;
+            _currentFileSize = record.DocumentSizeBytes;
+            _currentAnalyzedAt = record.AnalyzedAt;
+            _currentRecordId = record.Id;
+            _state = PageState.Results;
+            _activeTab = "analyze";
+        }
+    }
+
+    private async Task DownloadHistoricalPdf(LexGuardAnalysis record)
+    {
+        var result = AnalysisService.DeserializeAnalysis(record);
+        if (result == null) return;
+
+        try
+        {
+            var pdfBytes = PdfService.GenerateReport(result, record.DocumentName, record.AnalyzedAt);
+            var base64 = Convert.ToBase64String(pdfBytes);
+            var reportName = $"LexGuard_Report_{Path.GetFileNameWithoutExtension(record.DocumentName)}_{record.AnalyzedAt:yyyyMMdd}.pdf";
+            await JS.InvokeVoidAsync("bastionLexGuard.downloadFile", reportName, "application/pdf", base64);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"PDF generation failed: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteAnalysis(LexGuardAnalysis record)
+    {
+        Db.LexGuardAnalyses.Remove(record);
+        await Db.SaveChangesAsync();
+        await LoadHistory();
+        StateHasChanged();
+    }
+
+    // ── Helpers ──
+
+    private void ResetToUpload()
+    {
+        _state = PageState.Upload;
+        _currentResult = null;
+        _errorMessage = null;
+    }
+
+    private string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
 }

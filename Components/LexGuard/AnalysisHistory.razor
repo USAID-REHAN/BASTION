@@ -1,6 +1,80 @@
-<!-- AnalysisHistory.razor — Past analyses list from SQLite — view/download previous reports -->
+@* AnalysisHistory.razor — Past analyses list from SQLite — view/download previous reports *@
+@using BASTION.Models
+
+@if (Analyses.Any())
+{
+    <div class="lex-history-list">
+        @foreach (var analysis in Analyses)
+        {
+            var riskClass = analysis.RiskLevel?.ToLower() switch
+            {
+                "danger" => "danger",
+                "caution" => "caution",
+                _ => "safe"
+            };
+
+            var riskIcon = analysis.RiskLevel?.ToLower() switch
+            {
+                "danger" => "bi-exclamation-triangle",
+                "caution" => "bi-exclamation-circle",
+                _ => "bi-shield-check"
+            };
+
+            <div class="lex-history-item" @onclick="() => OnViewAnalysis.InvokeAsync(analysis)">
+                <div class="lex-history-icon @riskClass">
+                    <i class="bi @riskIcon"></i>
+                </div>
+
+                <div class="lex-history-info">
+                    <div class="lex-history-name" title="@analysis.DocumentName">
+                        @analysis.DocumentName
+                    </div>
+                    <div class="lex-history-meta">
+                        @analysis.DocumentType.ToUpper() · @FormatSize(analysis.DocumentSizeBytes) · @analysis.AnalyzedAt.ToString("dd MMM yyyy, HH:mm")
+                    </div>
+                </div>
+
+                <div class="lex-history-score @riskClass">
+                    @analysis.RiskScore
+                </div>
+
+                <div class="lex-history-actions">
+                    <button class="btn-lex btn-lex-ghost btn-lex-sm"
+                            @onclick:stopPropagation="true"
+                            @onclick="() => OnDownloadPdf.InvokeAsync(analysis)"
+                            title="Download PDF Report">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                    </button>
+                    <button class="btn-lex btn-lex-ghost btn-lex-sm"
+                            @onclick:stopPropagation="true"
+                            @onclick="() => OnDeleteAnalysis.InvokeAsync(analysis)"
+                            title="Delete">
+                        <i class="bi bi-trash3"></i>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="lex-empty">
+        <i class="bi bi-clock-history"></i>
+        <h3>No analysis history yet</h3>
+        <p>Upload a document in the Analyze tab to get started</p>
+    </div>
+}
 
 @code {
-    // TODO: Display past analyses from SQLite via EF Core
-    // TODO: View and download previous reports
+    [Parameter] public List<LexGuardAnalysis> Analyses { get; set; } = new();
+    [Parameter] public EventCallback<LexGuardAnalysis> OnViewAnalysis { get; set; }
+    [Parameter] public EventCallback<LexGuardAnalysis> OnDownloadPdf { get; set; }
+    [Parameter] public EventCallback<LexGuardAnalysis> OnDeleteAnalysis { get; set; }
+
+    private string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
 }

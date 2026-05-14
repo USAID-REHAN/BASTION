@@ -1,5 +1,42 @@
-<!-- ObligationTimeline.razor — Extracted deadlines/payments rendered as a timeline -->
+@* ObligationTimeline.razor — Extracted deadlines/payments rendered as a timeline *@
+@using BASTION.Models
+
+@if (Obligations.Any())
+{
+    <div class="lex-timeline">
+        @foreach (var ob in Obligations)
+        {
+            <div class="lex-timeline-item">
+                <div class="tl-type">
+                    @GetTypeIcon(ob.Type) @ob.Type.ToUpper()
+                </div>
+                <div class="tl-title">@ob.Title</div>
+                <div class="tl-date">
+                    <i class="bi bi-calendar3"></i> @ob.Date
+                </div>
+                <div class="tl-desc">@ob.Description</div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="lex-empty" style="padding: 30px;">
+        <i class="bi bi-calendar-check"></i>
+        <p>No time-bound obligations found</p>
+    </div>
+}
 
 @code {
-    // TODO: Display AI-extracted deadlines, payment dates, renewal windows as chronological timeline
+    [Parameter] public List<ObligationInfo> Obligations { get; set; } = new();
+
+    private string GetTypeIcon(string type) => type.ToLower() switch
+    {
+        "deadline" => "⏰",
+        "payment" => "💰",
+        "renewal" => "🔄",
+        "termination" => "🚫",
+        "notification" => "📬",
+        _ => "📋"
+    };
 }

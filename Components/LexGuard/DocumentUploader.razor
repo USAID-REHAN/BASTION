@@ -1,7 +1,61 @@
 <!-- DocumentUploader.razor — Drag-and-drop PDF/DOCX upload zone with progress indicator -->
 
+<div class="lex-upload-zone" id="lex-drop-zone">
+    <div class="upload-icon">
+        <i class="bi bi-cloud-arrow-up"></i>
+    </div>
+    <h3>Upload Legal Document</h3>
+    <p>Drag & drop your contract, agreement, or terms document here</p>
+    <div class="file-types">
+        <span class="file-type-badge"><i class="bi bi-file-earmark-pdf"></i> PDF</span>
+        <span class="file-type-badge"><i class="bi bi-file-earmark-word"></i> DOCX</span>
+    </div>
+    <p style="margin-top: 12px; font-size: 0.8rem; color: var(--text-muted);">Maximum file size: 10 MB</p>
+
+    <InputFile OnChange="OnFileSelected" accept=".pdf,.docx" class="lex-upload-input" />
+</div>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="lex-error" style="margin-top: 16px;">
+        <i class="bi bi-exclamation-triangle"></i>
+        <div>@_errorMessage</div>
+    </div>
+}
+
 @code {
-    // TODO: Blazor InputFile drag-and-drop zone
-    // TODO: PDF/DOCX parsing via MemoryStream — file never written to disk
-    // TODO: Upload progress indicator
+    [Parameter] public EventCallback<(Stream Stream, string FileName, string FileType, long FileSize)> OnFileUploaded { get; set; }
+
+    private string? _errorMessage;
+    private const long MaxFileSize = 10 * 1024 * 1024; // 10 MB
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _errorMessage = null;
+        var file = e.File;
+
+        // Validate file size
+        if (file.Size > MaxFileSize)
+        {
+            _errorMessage = $"File is too large ({file.Size / 1024 / 1024:F1} MB). Maximum size is 10 MB.";
+            return;
+        }
+
+        // Validate file type
+        var extension = Path.GetExtension(file.Name).ToLower();
+        if (extension != ".pdf" && extension != ".docx")
+        {
+            _errorMessage = "Unsupported file type. Please upload a PDF or DOCX file.";
+            return;
+        }
+
+        var fileType = extension == ".pdf" ? "pdf" : "docx";
+
+        // Read file into memory stream
+        using var memoryStream = new MemoryStream();
+        await file.OpenReadStream(MaxFileSize).CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        await OnFileUploaded.InvokeAsync((memoryStream, file.Name, fileType, file.Size));
+    }
 }

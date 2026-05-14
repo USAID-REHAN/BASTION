@@ -1,6 +1,72 @@
-<!-- ClauseHighlighter.razor — Color-coded clause display (green/amber/red per risk level) -->
+@* ClauseHighlighter.razor — Color-coded clause display (green/amber/red per risk level) *@
+@using BASTION.Models
+
+@if (Clauses.Any())
+{
+    <div class="lex-clause-list">
+        @foreach (var clause in Clauses)
+        {
+            var idx = Clauses.IndexOf(clause);
+            <div class="lex-clause @clause.RiskLevel.ToLower() @(_expandedClauses.Contains(idx) ? "expanded" : "")"
+                 @onclick="() => ToggleClause(idx)">
+
+                <div class="lex-clause-header">
+                    <span class="lex-clause-title">
+                        @GetRiskIcon(clause.RiskLevel) @clause.Title
+                    </span>
+                    <span class="lex-clause-badge @clause.RiskLevel.ToLower()">
+                        @clause.RiskLevel.ToUpper()
+                    </span>
+                </div>
+
+                @if (!string.IsNullOrEmpty(clause.Content))
+                {
+                    <div class="lex-clause-content">
+                        "@clause.Content"
+                    </div>
+                }
+
+                <div class="lex-clause-explanation">
+                    @clause.Explanation
+                </div>
+
+                <div class="lex-clause-toggle">
+                    @if (_expandedClauses.Contains(idx))
+                    {
+                        <i class="bi bi-chevron-up"></i> <span>Collapse</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-chevron-down"></i> <span>Show details</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="lex-empty">
+        <i class="bi bi-shield-check"></i>
+        <p>No clauses to display</p>
+    </div>
+}
 
 @code {
-    // TODO: Display clauses color-coded by risk level
-    //   Green = safe, Amber = caution, Red = danger
+    [Parameter] public List<ClauseAnalysis> Clauses { get; set; } = new();
+
+    private HashSet<int> _expandedClauses = new();
+
+    private void ToggleClause(int index)
+    {
+        if (!_expandedClauses.Remove(index))
+            _expandedClauses.Add(index);
+    }
+
+    private string GetRiskIcon(string riskLevel) => riskLevel.ToLower() switch
+    {
+        "danger" => "⚠️",
+        "caution" => "⚡",
+        _ => "✅"
+    };
 }
