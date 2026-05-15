@@ -1,6 +1,246 @@
 <!-- SecurityChatbot.razor — Groq conversational assistant + Web Speech API voice input -->
 
+@implements IDisposable
+@inject BASTION.Services.AI.GroqService GroqService
+@inject IJSRuntime JS
+
+<div class="cyber-chat" id="cyber-chatbot">
+    <!-- Chat Messages -->
+    <div class="cyber-chat-messages" id="chat-messages">
+        @if (_messages.Count == 0)
+        {
+            <div class="cyber-empty">
+                <i class="bi bi-robot"></i>
+                <p>Ask me anything about cybersecurity — passwords, malware, phishing, VPNs, privacy, or your system security.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var msg in _messages)
+            {
+                <div class="cyber-message @(msg.IsUser ? "user" : "ai")">
+                    <div class="cyber-message-avatar">
+                        @if (msg.IsUser)
+                        {
+                            <i class="bi bi-person-fill"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-shield-check"></i>
+                        }
+                    </div>
+                    <div class="cyber-message-bubble">@msg.Text</div>
+                </div>
+            }
+        }
+
+        @if (_isTyping)
+        {
+            <div class="cyber-message ai">
+                <div class="cyber-message-avatar">
+                    <i class="bi bi-shield-check"></i>
+                </div>
+                <div class="cyber-message-bubble">
+                    <div class="cyber-typing-indicator">
+                        <div class="cyber-typing-dot"></div>
+                        <div class="cyber-typing-dot"></div>
+                        <div class="cyber-typing-dot"></div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Input Area -->
+    <div class="cyber-chat-input">
+        <button class="cyber-chat-voice @(_isRecording ? "recording" : "")"
+                @onclick="ToggleVoice" title="@(_isRecording ? "Stop recording" : "Voice input")"
+                id="chat-voice-btn">
+            <i class="bi @(_isRecording ? "bi-mic-fill" : "bi-mic")"></i>
+        </button>
+        <input type="text" @bind="_currentMessage" @bind:event="oninput"
+               @onkeydown="HandleKeyDown"
+               placeholder="@(_isRecording ? "🎙️ Listening..." : "Ask a security question...")"
+               disabled="@_isTyping"
+               id="chat-input" />
+        <button class="cyber-chat-send" @onclick="SendMessage"
+                disabled="@(_isTyping || string.IsNullOrWhiteSpace(_currentMessage))"
+                id="chat-send-btn">
+            <i class="bi bi-send-fill"></i>
+        </button>
+    </div>
+</div>
+
 @code {
-    // TODO: Groq Llama 3 conversational assistant for security questions
-    // TODO: Web Speech API voice input via bastion-interop.js
+    private string _currentMessage = "";
+    private bool _isTyping;
+    private bool _isRecording;
+    private List<ChatMsg> _messages = new();
+    private DotNetObjectReference<SecurityChatbot>? _dotNetRef;
+
+    private const string SystemPrompt = @"You are BASTION CyberShield Security Assistant — an AI cybersecurity expert. You help users with:
+- Password security and best practices
+- Malware identification and protection
+- Phishing and social engineering awareness
+- Network security (VPNs, firewalls, Wi-Fi safety)
+- Data privacy and personal information protection
+- System hardening and security configuration
+- Incident response guidance
+
+Rules:
+- Give clear, actionable advice
+- Use bullet points for lists
+- Warn about dangerous actions
+- Never provide instructions for illegal activities
+- Keep responses concise but thorough
+- Refer users to CyberShield tools when relevant (System Audit, IP Checker, Password Breach Checker)";
+
+    // Build conversation history for Groq API
+    private List<BASTION.Services.AI.GroqChatMessage> BuildConversation()
+    {
+        var conversation = new List<BASTION.Services.AI.GroqChatMessage>
+        {
+            new() { Role = "system", Content = SystemPrompt }
+        };
+
+        // Include last 20 messages for context window
+        var recentMessages = _messages.TakeLast(20);
+        foreach (var msg in recentMessages)
+        {
+            conversation.Add(new BASTION.Services.AI.GroqChatMessage
+            {
+                Role = msg.IsUser ? "user" : "assistant",
+                Content = msg.Text
+            });
+        }
+
+        return conversation;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !_isTyping && !string.IsNullOrWhiteSpace(_currentMessage))
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_currentMessage) || _isTyping) return;
+
+        var userText = _currentMessage.Trim();
+        _currentMessage = "";
+        _messages.Add(new ChatMsg { Text = userText, IsUser = true });
+        _isTyping = true;
+        StateHasChanged();
+
+        await ScrollToBottom();
+
+        try
+        {
+            var conversation = BuildConversation();
+            var response = await GroqService.ChatAsync(conversation);
+            _messages.Add(new ChatMsg { Text = response, IsUser = false });
+        }
+        catch (Exception ex)
+        {
+            _messages.Add(new ChatMsg { Text = $"⚠️ Error: {ex.Message}", IsUser = false });
+        }
+        finally
+        {
+            _isTyping = false;
+            StateHasChanged();
+            await ScrollToBottom();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("bastionCyber.scrollToBottom", "chat-messages");
+        }
+        catch { /* JS not ready */ }
+    }
+
+    // ── Web Speech API Voice Input ──
+    private async Task ToggleVoice()
+    {
+        if (_isRecording)
+        {
+            await StopVoice();
+        }
+        else
+        {
+            await StartVoice();
+        }
+    }
+
+    private async Task StartVoice()
+    {
+        try
+        {
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+            var started = await JS.InvokeAsync<bool>("bastionCyber.startVoiceInput", _dotNetRef);
+            _isRecording = started;
+        }
+        catch
+        {
+            _isRecording = false;
+        }
+    }
+
+    private async Task StopVoice()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("bastionCyber.stopVoiceInput");
+        }
+        catch { }
+        _isRecording = false;
+    }
+
+    [JSInvokable]
+    public async Task OnVoiceResult(string transcript)
+    {
+        _isRecording = false;
+        _currentMessage = transcript;
+        StateHasChanged();
+
+        // Auto-send the voice message
+        if (!string.IsNullOrWhiteSpace(transcript))
+        {
+            await SendMessage();
+        }
+    }
+
+    [JSInvokable]
+    public void OnVoiceError(string error)
+    {
+        _isRecording = false;
+        if (error != "no-speech")
+        {
+            _messages.Add(new ChatMsg { Text = $"🎙️ Voice error: {error}", IsUser = false });
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public void OnVoiceEnd()
+    {
+        _isRecording = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+
+    private class ChatMsg
+    {
+        public string Text { get; set; } = "";
+        public bool IsUser { get; set; }
+    }
 }

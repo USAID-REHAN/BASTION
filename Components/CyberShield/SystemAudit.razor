@@ -1,7 +1,278 @@
 <!-- SystemAudit.razor — PowerShell/CMD paste box → AI analysis → 5-panel report -->
 
+@inject BASTION.Services.AI.GroqService GroqService
+@inject IJSRuntime JS
+
+<!-- Diagnostic Command -->
+<div class="cyber-card">
+    <div class="cyber-card-title">
+        <i class="bi bi-terminal-fill"></i>
+        Step 1 — Copy & Run This Command in PowerShell
+    </div>
+    <div class="cyber-command-block">
+        <button class="copy-btn @(_copied ? "copied" : "")" @onclick="CopyCommand" id="copy-command-btn">
+            <i class="bi @(_copied ? "bi-check-lg" : "bi-clipboard")"></i>
+            @(_copied ? "Copied!" : "Copy")
+        </button>
+        <pre>@_diagnosticCommand</pre>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted);">
+        <i class="bi bi-info-circle"></i>
+        Open PowerShell → paste the command → copy the full output → paste below.
+    </p>
+</div>
+
+<!-- Paste Output -->
+<div class="cyber-card">
+    <div class="cyber-card-title">
+        <i class="bi bi-clipboard-data"></i>
+        Step 2 — Paste System Output
+    </div>
+    <textarea class="cyber-paste-area"
+              @bind="_pastedOutput"
+              @bind:event="oninput"
+              placeholder="Paste your PowerShell output here..."
+              id="audit-paste-area"></textarea>
+
+    <div style="display: flex; gap: 12px; margin-top: 16px; align-items: center;">
+        <button class="btn-cyber" @onclick="AnalyzeSystem" disabled="@(_isAnalyzing || string.IsNullOrWhiteSpace(_pastedOutput))" id="analyze-btn">
+            @if (_isAnalyzing)
+            {
+                <div class="cyber-spinner" style="width: 18px; height: 18px; border-width: 2px;"></div>
+                <span>Analyzing...</span>
+            }
+            else
+            {
+                <i class="bi bi-cpu"></i>
+                <span>Analyze System</span>
+            }
+        </button>
+
+        @if (!string.IsNullOrWhiteSpace(_pastedOutput))
+        {
+            <span style="font-size: 0.8rem; color: var(--text-muted);">
+                @_pastedOutput.Length.ToString("N0") characters
+            </span>
+        }
+    </div>
+</div>
+
+<!-- Sentinel Report Upload (COAL Bonus) -->
+<div class="cyber-card">
+    <div class="cyber-card-title">
+        <i class="bi bi-file-earmark-code"></i>
+        Optional — Upload sentinel_report.txt
+        <span class="badge-bastion badge-info" style="margin-left: auto;">COAL BONUS</span>
+    </div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+        Upload a sentinel_report.txt from the companion Assembly scanner for hardware-level analysis.
+    </p>
+    <InputFile OnChange="OnSentinelFileSelected" accept=".txt" id="sentinel-upload" />
+    @if (!string.IsNullOrWhiteSpace(_sentinelContent))
+    {
+        <div style="margin-top: 8px; font-size: 0.82rem; color: var(--success);">
+            <i class="bi bi-check-circle"></i> File loaded (@_sentinelContent.Length.ToString("N0") chars) — will be included in analysis.
+        </div>
+    }
+</div>
+
+<!-- Analysis Report -->
+@if (_reportSections.Count > 0)
+{
+    <div class="cyber-card">
+        <div class="cyber-card-title">
+            <i class="bi bi-shield-fill-check"></i>
+            AI Security Analysis Report
+            <button class="btn-cyber-outline" style="margin-left: auto;" @onclick="DownloadReportPdf" id="download-report-btn">
+                <i class="bi bi-file-earmark-pdf"></i>
+                Download PDF
+            </button>
+        </div>
+        <div class="cyber-report">
+            @foreach (var panel in _reportSections)
+            {
+                <div class="cyber-report-panel">
+                    <div class="cyber-report-panel-header" @onclick="() => ToggleSection(panel.Key)">
+                        <i class="bi @panel.Icon"></i>
+                        <h3>@panel.Title</h3>
+                        <i class="bi bi-chevron-down toggle-icon @(_openSections.Contains(panel.Key) ? "open" : "")"></i>
+                    </div>
+                    @if (_openSections.Contains(panel.Key))
+                    {
+                        <div class="cyber-report-panel-body">
+                            @panel.Content
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
 @code {
-    // TODO: Paste box for PowerShell/CMD output
-    // TODO: Send to Groq AI → 5-section report:
-    //   Threat Summary, Recommended Actions, Security Suggestions, Open Port Analysis, Performance Tips
+    private bool _copied;
+    private bool _isAnalyzing;
+    private string _pastedOutput = "";
+    private string _sentinelContent = "";
+    private List<ReportSection> _reportSections = new();
+    private HashSet<string> _openSections = new();
+
+    private const string _diagnosticCommand = @"powershell -Command ""
+Write-Output '=== OPEN PORTS ==='; netstat -ano | findstr LISTENING;
+Write-Output '=== TOP PROCESSES ==='; Get-Process | Sort CPU -Desc | Select -First 25 | Format-Table Name,Id,CPU,WS -Auto;
+Write-Output '=== STARTUP ITEMS ==='; Get-CimInstance Win32_StartupCommand | Format-List;
+Write-Output '=== SYSTEM INFO ==='; Get-ComputerInfo | Select OsName,CsProcessors,CsTotalPhysicalMemory | Format-List;
+Write-Output '=== PATCHES ==='; Get-HotFix | Sort InstalledOn -Desc | Select -First 10 | Format-Table;""";
+
+    private async Task CopyCommand()
+    {
+        try
+        {
+            await JS.InvokeAsync<bool>("bastionCyber.copyCommand", _diagnosticCommand);
+            _copied = true;
+            StateHasChanged();
+            await Task.Delay(2000);
+            _copied = false;
+            StateHasChanged();
+        }
+        catch { /* clipboard not available */ }
+    }
+
+    private async Task OnSentinelFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            if (file.Size > 1_000_000) return; // 1MB max
+            using var reader = new StreamReader(file.OpenReadStream(1_000_000));
+            _sentinelContent = await reader.ReadToEndAsync();
+        }
+        catch { _sentinelContent = ""; }
+    }
+
+    private async Task DownloadReportPdf()
+    {
+        if (_reportSections.Count == 0) return;
+        try
+        {
+            var sections = _reportSections.Select(s => new { title = s.Title, content = s.Content }).ToArray();
+            await JS.InvokeVoidAsync("bastionCyber.downloadReportPdf", (object)sections);
+        }
+        catch { /* PDF generation failed */ }
+    }
+
+    private async Task AnalyzeSystem()
+    {
+        if (string.IsNullOrWhiteSpace(_pastedOutput) || _isAnalyzing) return;
+
+        _isAnalyzing = true;
+        _reportSections.Clear();
+        StateHasChanged();
+
+        var systemPrompt = @"You are BASTION CyberShield — a cybersecurity AI analyst. The user will paste the output of a Windows system diagnostic command. Analyze it and provide a detailed security report in EXACTLY 5 sections. Use this EXACT format:
+
+## THREAT SUMMARY
+[Your analysis of potential threats found]
+
+## RECOMMENDED ACTIONS
+[Specific actions the user should take]
+
+## SECURITY SUGGESTIONS
+[General security hardening suggestions]
+
+## OPEN PORT ANALYSIS
+[Analysis of listening ports and associated processes]
+
+## PERFORMANCE TIPS
+[System performance observations and optimization tips]
+
+Be specific, actionable, and reference actual data from the output. If sentinel_report.txt hardware data is included, incorporate CPUID, GPU driver, and registry startup analysis.";
+
+        var userInput = _pastedOutput;
+        if (!string.IsNullOrWhiteSpace(_sentinelContent))
+        {
+            userInput += "\n\n=== SENTINEL HARDWARE REPORT ===\n" + _sentinelContent;
+        }
+
+        var response = await GroqService.ChatAsync(systemPrompt, userInput);
+        ParseReport(response);
+
+        _isAnalyzing = false;
+        // Open all sections by default
+        foreach (var s in _reportSections)
+            _openSections.Add(s.Key);
+        StateHasChanged();
+    }
+
+    private void ParseReport(string response)
+    {
+        var icons = new Dictionary<string, string>
+        {
+            { "THREAT SUMMARY", "bi-exclamation-triangle-fill" },
+            { "RECOMMENDED ACTIONS", "bi-list-check" },
+            { "SECURITY SUGGESTIONS", "bi-lightbulb-fill" },
+            { "OPEN PORT ANALYSIS", "bi-hdd-network-fill" },
+            { "PERFORMANCE TIPS", "bi-speedometer2" }
+        };
+
+        var sections = new[] { "THREAT SUMMARY", "RECOMMENDED ACTIONS", "SECURITY SUGGESTIONS", "OPEN PORT ANALYSIS", "PERFORMANCE TIPS" };
+
+        foreach (var section in sections)
+        {
+            var startMarker = $"## {section}";
+            var startIdx = response.IndexOf(startMarker, StringComparison.OrdinalIgnoreCase);
+            if (startIdx < 0)
+            {
+                startMarker = section;
+                startIdx = response.IndexOf(startMarker, StringComparison.OrdinalIgnoreCase);
+            }
+            if (startIdx < 0) continue;
+
+            var contentStart = startIdx + startMarker.Length;
+            var nextSection = sections
+                .Where(s => s != section)
+                .Select(s => response.IndexOf($"## {s}", contentStart, StringComparison.OrdinalIgnoreCase))
+                .Where(i => i > 0)
+                .DefaultIfEmpty(response.Length)
+                .Min();
+
+            var content = response.Substring(contentStart, nextSection - contentStart).Trim();
+            // Strip markdown ## headers that might be duplicated
+            content = content.TrimStart('#', ' ', '\n', '\r');
+
+            _reportSections.Add(new ReportSection
+            {
+                Key = section.ToLower().Replace(" ", "-"),
+                Title = section,
+                Icon = icons.GetValueOrDefault(section, "bi-info-circle"),
+                Content = content
+            });
+        }
+
+        // If parsing failed, show raw response
+        if (_reportSections.Count == 0)
+        {
+            _reportSections.Add(new ReportSection
+            {
+                Key = "full-report",
+                Title = "Analysis Report",
+                Icon = "bi-file-text",
+                Content = response
+            });
+        }
+    }
+
+    private void ToggleSection(string key)
+    {
+        if (!_openSections.Remove(key))
+            _openSections.Add(key);
+    }
+
+    private class ReportSection
+    {
+        public string Key { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string Content { get; set; } = "";
+    }
 }

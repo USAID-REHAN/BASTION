@@ -1,7 +1,252 @@
-<!-- IpChecker.razor — IP input → AbuseIPDB API → result card + geomap -->
+<!-- IpChecker.razor — IP input → AbuseIPDB API → result card + risk badge -->
+
+@inject IConfiguration Configuration
+
+<div class="cyber-card">
+    <div class="cyber-card-title">
+        <i class="bi bi-globe2"></i>
+        IP Reputation Checker
+    </div>
+
+    @if (string.IsNullOrWhiteSpace(Configuration["AbuseIPDB:ApiKey"]))
+    {
+        <div class="cyber-config-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            AbuseIPDB API key not configured. Add your key to appsettings.json under AbuseIPDB:ApiKey.
+        </div>
+    }
+
+    <div style="display: flex; gap: 12px; margin-bottom: 20px;">
+        <input class="input-bastion" type="text" @bind="_ipAddress" @bind:event="oninput"
+               @onkeydown="HandleKeyDown"
+               placeholder="Enter IP address (e.g., 8.8.8.8)" id="ip-input"
+               style="flex: 1; border-color: var(--cyber-border);" />
+        <button class="btn-cyber" @onclick="CheckIp"
+                disabled="@(_isChecking || string.IsNullOrWhiteSpace(_ipAddress))" id="check-ip-btn">
+            @if (_isChecking)
+            {
+                <div class="cyber-spinner" style="width: 18px; height: 18px; border-width: 2px;"></div>
+                <span>Checking...</span>
+            }
+            else
+            {
+                <i class="bi bi-search"></i>
+                <span>Check IP</span>
+            }
+        </button>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div style="color: var(--danger); font-size: 0.88rem; margin-bottom: 16px;">
+            <i class="bi bi-x-circle"></i> @_errorMessage
+        </div>
+    }
+</div>
+
+<!-- Results -->
+@if (_result != null)
+{
+    <div class="cyber-card">
+        <div class="cyber-card-title">
+            <i class="bi bi-clipboard-data"></i>
+            Results for @_result.IpAddress
+            <span class="badge-bastion @GetBadgeClass()" style="margin-left: auto;">
+                @GetRiskLabel()
+            </span>
+        </div>
+
+        <div class="cyber-ip-result">
+            <!-- Abuse Score Ring -->
+            <div class="cyber-ip-score-ring">
+                <svg viewBox="0 0 120 120">
+                    <circle class="ring-bg" cx="60" cy="60" r="50" />
+                    <circle class="ring-fill" cx="60" cy="60" r="50"
+                            stroke="@GetScoreColor()"
+                            stroke-dasharray="@(Math.PI * 100)"
+                            stroke-dashoffset="@(Math.PI * 100 * (1 - _result.AbuseScore / 100.0))"
+                            transform="rotate(-90, 60, 60)" />
+                </svg>
+                <div class="cyber-ip-score-value" style="color: @GetScoreColor();">@_result.AbuseScore</div>
+            </div>
+
+            <!-- Detail Cards -->
+            <div class="cyber-ip-details">
+                <div class="cyber-ip-detail">
+                    <div class="cyber-ip-detail-label">Country</div>
+                    <div class="cyber-ip-detail-value">@(_result.CountryName ?? "Unknown") @(_result.CountryCode ?? "")</div>
+                </div>
+                <div class="cyber-ip-detail">
+                    <div class="cyber-ip-detail-label">ISP</div>
+                    <div class="cyber-ip-detail-value">@(_result.Isp ?? "Unknown")</div>
+                </div>
+                <div class="cyber-ip-detail">
+                    <div class="cyber-ip-detail-label">Domain</div>
+                    <div class="cyber-ip-detail-value">@(_result.Domain ?? "N/A")</div>
+                </div>
+                <div class="cyber-ip-detail">
+                    <div class="cyber-ip-detail-label">Usage Type</div>
+                    <div class="cyber-ip-detail-value">@(_result.UsageType ?? "Unknown")</div>
+                </div>
+                <div class="cyber-ip-detail">
+                    <div class="cyber-ip-detail-label">Total Reports</div>
+                    <div class="cyber-ip-detail-value">@_result.TotalReports</div>
+                </div>
+                <div class="cyber-ip-detail">
+                    <div class="cyber-ip-detail-label">Confidence Score</div>
+                    <div class="cyber-ip-detail-value" style="color: @GetScoreColor();">@_result.AbuseScore%</div>
+                </div>
+                <div class="cyber-ip-detail">
+                    <div class="cyber-ip-detail-label">IP Version</div>
+                    <div class="cyber-ip-detail-value">IPv@_result.IpVersion</div>
+                </div>
+                <div class="cyber-ip-detail">
+                    <div class="cyber-ip-detail-label">Last Reported</div>
+                    <div class="cyber-ip-detail-value">@(_result.LastReportedAt ?? "Never")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
-    // TODO: IP address input field
-    // TODO: AbuseIPDB API call → abuse score, geolocation, ISP, threat categories, confidence rating
-    // TODO: Geolocation map via JS interop
+    private string _ipAddress = "";
+    private bool _isChecking;
+    private string? _errorMessage;
+    private IpResult? _result;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await CheckIp();
+    }
+
+    private async Task CheckIp()
+    {
+        if (string.IsNullOrWhiteSpace(_ipAddress) || _isChecking) return;
+
+        var apiKey = Configuration["AbuseIPDB:ApiKey"];
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            _errorMessage = "AbuseIPDB API key not configured.";
+            return;
+        }
+
+        // Basic IP validation
+        if (!System.Net.IPAddress.TryParse(_ipAddress.Trim(), out _))
+        {
+            _errorMessage = "Invalid IP address format.";
+            return;
+        }
+
+        _isChecking = true;
+        _errorMessage = null;
+        _result = null;
+        StateHasChanged();
+
+        try
+        {
+            using var client = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Get,
+                $"https://api.abuseipdb.com/api/v2/check?ipAddress={Uri.EscapeDataString(_ipAddress.Trim())}&maxAgeInDays=90&verbose");
+            request.Headers.Add("Key", apiKey);
+            request.Headers.Add("Accept", "application/json");
+
+            var response = await client.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _errorMessage = $"API returned {(int)response.StatusCode}. Check your API key and rate limits.";
+                _isChecking = false;
+                return;
+            }
+
+            var json = await response.Content.ReadFromJsonAsync<AbuseIpDbResponse>();
+            if (json?.Data != null)
+            {
+                _result = new IpResult
+                {
+                    IpAddress = json.Data.IpAddress ?? _ipAddress,
+                    AbuseScore = json.Data.AbuseConfidenceScore,
+                    CountryCode = json.Data.CountryCode,
+                    CountryName = json.Data.CountryName,
+                    Isp = json.Data.Isp,
+                    Domain = json.Data.Domain,
+                    UsageType = json.Data.UsageType,
+                    TotalReports = json.Data.TotalReports,
+                    IpVersion = json.Data.IpVersion,
+                    LastReportedAt = json.Data.LastReportedAt
+                };
+            }
+            else
+            {
+                _errorMessage = "No data returned from API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            _isChecking = false;
+        }
+    }
+
+    private string GetScoreColor()
+    {
+        if (_result == null) return "var(--text-muted)";
+        if (_result.AbuseScore <= 15) return "var(--success)";
+        if (_result.AbuseScore <= 50) return "var(--warning)";
+        return "var(--danger)";
+    }
+
+    private string GetBadgeClass()
+    {
+        if (_result == null) return "badge-info";
+        if (_result.AbuseScore <= 15) return "badge-safe";
+        if (_result.AbuseScore <= 50) return "badge-caution";
+        return "badge-danger";
+    }
+
+    private string GetRiskLabel()
+    {
+        if (_result == null) return "UNKNOWN";
+        if (_result.AbuseScore <= 15) return "SAFE";
+        if (_result.AbuseScore <= 50) return "CAUTION";
+        return "DANGER";
+    }
+
+    // ── Models ──
+    private class IpResult
+    {
+        public string IpAddress { get; set; } = "";
+        public int AbuseScore { get; set; }
+        public string? CountryCode { get; set; }
+        public string? CountryName { get; set; }
+        public string? Isp { get; set; }
+        public string? Domain { get; set; }
+        public string? UsageType { get; set; }
+        public int TotalReports { get; set; }
+        public int IpVersion { get; set; }
+        public string? LastReportedAt { get; set; }
+    }
+
+    // AbuseIPDB API response shape
+    private class AbuseIpDbResponse
+    {
+        public AbuseIpDbData? Data { get; set; }
+    }
+
+    private class AbuseIpDbData
+    {
+        public string? IpAddress { get; set; }
+        public int AbuseConfidenceScore { get; set; }
+        public string? CountryCode { get; set; }
+        public string? CountryName { get; set; }
+        public string? Isp { get; set; }
+        public string? Domain { get; set; }
+        public string? UsageType { get; set; }
+        public int TotalReports { get; set; }
+        public int IpVersion { get; set; }
+        public string? LastReportedAt { get; set; }
+    }
 }

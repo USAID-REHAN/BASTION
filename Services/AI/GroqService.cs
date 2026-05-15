@@ -43,6 +43,27 @@ public class GroqService
             max_tokens = 4096
         };
 
+        return await SendPostRequestAsync(requestBody);
+    }
+
+    /// <summary>
+    /// Send a chat completion request with full conversation history to Groq API.
+    /// </summary>
+    public async Task<string> ChatAsync(IEnumerable<GroqChatMessage> messages, double temperature = 0.3)
+    {
+        var requestBody = new
+        {
+            model = _model,
+            messages = messages.Select(m => new { role = m.Role, content = m.Content }).ToArray(),
+            temperature,
+            max_tokens = 4096
+        };
+
+        return await SendPostRequestAsync(requestBody);
+    }
+
+    private async Task<string> SendPostRequestAsync(object requestBody)
+    {
         var json = JsonSerializer.Serialize(requestBody);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -64,4 +85,10 @@ public class GroqService
 
         return messageContent ?? string.Empty;
     }
+}
+
+public class GroqChatMessage
+{
+    public string Role { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
 }

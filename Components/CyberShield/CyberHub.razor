@@ -1,9 +1,80 @@
 @page "/cybershield"
+@rendermode InteractiveServer
+@inject BASTION.Services.Auth.AuthService AuthService
+@inject NavigationManager Navigation
 
-<!-- CyberHub.razor — Main CyberShield tab layout — routes between sub-tools -->
+<PageTitle>BASTION — CyberShield</PageTitle>
 
-<h2>CyberShield — Device Protection</h2>
+<div class="cyber-hub module-cyber">
+    <!-- Module Header -->
+    <div class="cyber-header">
+        <div class="cyber-header-content">
+            <div class="cyber-header-icon">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div>
+                <h1>CyberShield</h1>
+                <p>Device Protection & Security Intelligence</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="cyber-tabs">
+        <button class="cyber-tab @(_activeTab == Tab.Audit ? "active" : "")"
+                @onclick="() => SetTab(Tab.Audit)" id="cyber-tab-audit">
+            <i class="bi bi-terminal"></i>
+            <span>System Audit</span>
+        </button>
+        <button class="cyber-tab @(_activeTab == Tab.Ip ? "active" : "")"
+                @onclick="() => SetTab(Tab.Ip)" id="cyber-tab-ip">
+            <i class="bi bi-globe"></i>
+            <span>IP Checker</span>
+        </button>
+        <button class="cyber-tab @(_activeTab == Tab.Password ? "active" : "")"
+                @onclick="() => SetTab(Tab.Password)" id="cyber-tab-password">
+            <i class="bi bi-key"></i>
+            <span>Password Breach</span>
+        </button>
+        <button class="cyber-tab @(_activeTab == Tab.Chatbot ? "active" : "")"
+                @onclick="() => SetTab(Tab.Chatbot)" id="cyber-tab-chatbot">
+            <i class="bi bi-robot"></i>
+            <span>Security Chatbot</span>
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="cyber-content">
+        @switch (_activeTab)
+        {
+            case Tab.Audit:
+                <SystemAudit />
+                break;
+            case Tab.Ip:
+                <IpChecker />
+                break;
+            case Tab.Password:
+                <PasswordBreachChecker />
+                break;
+            case Tab.Chatbot:
+                <SecurityChatbot />
+                break;
+        }
+    </div>
+</div>
 
 @code {
-    // TODO: Tab layout routing between SystemAudit, IpChecker, PasswordBreachChecker, SecurityChatbot
+    private Tab _activeTab = Tab.Audit;
+
+    protected override void OnInitialized()
+    {
+        if (!AuthService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private void SetTab(Tab tab) => _activeTab = tab;
+
+    private enum Tab { Audit, Ip, Password, Chatbot }
 }
