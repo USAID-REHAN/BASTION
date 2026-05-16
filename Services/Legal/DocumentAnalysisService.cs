@@ -126,7 +126,7 @@ Rules:
     /// <summary>
     /// Full pipeline: extract text, analyze, and persist to database.
     /// </summary>
-    public async Task<(AnalysisResult Result, LexGuardAnalysis Record)> AnalyzeDocumentAsync(
+    public async Task<(AnalysisResult Result, LexGuardAnalysis Record, string RawText)> AnalyzeDocumentAsync(
         Stream fileStream, string fileName, string fileType, long fileSize, string userId)
     {
         // 1. Extract text
@@ -162,7 +162,7 @@ Rules:
         _db.LexGuardAnalyses.Add(record);
         await _db.SaveChangesAsync();
 
-        return (result, record);
+        return (result, record, text);
     }
 
     /// <summary>
@@ -188,7 +188,48 @@ Rules:
         }
     }
 
-    // ── Private helpers ──
+    // ── FEATURE 1: Interactive Document Q&A ──
+    public async Task<string> ChatWithDocumentAsync(string documentText, string userQuestion, List<(string Role, string Content)> chatHistory)
+    {
+        var prompt = "You are a legal AI assistant. Answer the user's question based STRICTLY on the provided document. If the answer is not in the document, say so. Keep it concise, helpful, and in plain English.\n\nDOCUMENT:\n" + documentText;
+        
+        // Truncate if necessary
+        if (prompt.Length > 25000) prompt = prompt[..25000] + "\n[Truncated]";
+
+        // Format conversation history for Groq
+        var conversation = new StringBuilder();
+        conversation.AppendLine(prompt);
+        foreach (var msg in chatHistory)
+        {
+            conversation.AppendLine($"{msg.Role.ToUpper()}: {msg.Content}");
+        }
+        conversation.AppendLine($"USER: {userQuestion}\nASSISTANT:");
+
+        return await _groq.ChatAsync("You are a helpful legal assistant.", conversation.ToString(), 0.3);
+    }
+
+    // ── FEATURE 4: Smart Legal Drafting ──
+    public async Task<string> DraftContractAsync(string parameters)
+    {
+        var prompt = "You are LexGuard, an expert legal drafter. Draft a comprehensive, legally sound contract or document based strictly on the following requirements. Format it using Markdown with clear headers and bullet points. Include standard protective boilerplate clauses.\n\nREQUIREMENTS:\n" + parameters;
+        return await _groq.ChatAsync("You are an expert lawyer.", prompt, 0.4);
+    }
+
+    // ── FEATURE 5: Document Comparison ──
+    public async Task<string> CompareDocumentsAsync(string textA, string textB)
+    {
+        var prompt = "Compare Version A and Version B of the following document. Do not just list text differences. Explain the LEGAL IMPLICATIONS of the changes. Which party benefits from the changes? What new risks were introduced? Use Markdown formatting with clear headers.\n\nVERSION A:\n" + textA + "\n\nVERSION B:\n" + textB;
+        if (prompt.Length > 60000) prompt = prompt[..60000] + "[Truncated]";
+        return await _groq.ChatAsync("You are an expert contract reviewer.", prompt, 0.2);
+    }
+
+    // ── FEATURE 6: Compliance Auditing ──
+    public async Task<string> AuditComplianceAsync(string documentText, string framework)
+    {
+        var prompt = $"Audit the following document for compliance against {framework} (e.g., GDPR, CCPA, HIPAA). Identify missing required clauses, non-compliant clauses, and give actionable recommendations to fix them. Use Markdown.\n\nDOCUMENT:\n" + documentText;
+        if (prompt.Length > 50000) prompt = prompt[..50000] + "[Truncated]";
+        return await _groq.ChatAsync("You are a strict compliance auditor.", prompt, 0.1);
+    }
 
     private static string ExtractJson(string text)
     {

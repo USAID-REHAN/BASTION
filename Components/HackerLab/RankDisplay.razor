@@ -1,7 +1,37 @@
-<!-- RankDisplay.razor — Current rank, XP progress bar, earned badge collection -->
+@inject BASTION.Services.Gamification.XpService XpService
+@implements IDisposable
+
+<div class="hacker-panel text-center">
+    <div class="cyber-card-title justify-content-center"><i class="bi bi-award"></i> Current Rank</div>
+    <h3 style="color: var(--hacker-primary);">@XpService.CurrentRank</h3>
+    <div class="progress my-3" style="height: 10px; background: var(--surface-current);">
+        <div class="progress-bar" style="width: @(Math.Min(100, (XpService.CurrentXp % 300) / 3))%; background: var(--hacker-primary);"></div>
+    </div>
+    <p class="text-muted small">@XpService.CurrentXp XP Total</p>
+    
+    <div class="mt-4">
+        <div class="cyber-card-title justify-content-center" style="font-size: 0.9rem;"><i class="bi bi-shield-check"></i> Badges</div>
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+            @if (XpService.Badges.Count == 0)
+            {
+                <span class="text-muted small">No badges yet.</span>
+            }
+            @foreach (var badge in XpService.Badges)
+            {
+                <span class="badge" style="background: rgba(124,58,237,0.2); color: #A78BFA; border: 1px solid #7C3AED;">@badge</span>
+            }
+        </div>
+    </div>
+</div>
 
 @code {
-    // TODO: Display current rank: Civilian → Script Kiddie → White Hat Analyst → Ethical Hacker → Cyber Guardian
-    // TODO: XP progress bar toward next rank
-    // TODO: Earned badge collection display
+    protected override void OnInitialized()
+    {
+        XpService.OnXpChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        XpService.OnXpChanged -= StateHasChanged;
+    }
 }

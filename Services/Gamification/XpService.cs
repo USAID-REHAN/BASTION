@@ -1,12 +1,34 @@
 namespace BASTION.Services.Gamification;
 
-/// <summary>
-/// XP calculation, rank promotion, and badge unlock logic for HackerLab.
-/// Ranks: Civilian → Script Kiddie → White Hat Analyst → Ethical Hacker → Cyber Guardian
-/// </summary>
 public class XpService
 {
-    // TODO: XP calculation per game completion
-    // TODO: Rank promotion thresholds
-    // TODO: Badge unlock logic per domain
+    public int CurrentXp { get; private set; } = 0;
+    public string CurrentRank => GetRank(CurrentXp);
+    public List<string> Badges { get; private set; } = new();
+
+    public event Action? OnXpChanged;
+
+    public void AddXp(int xp)
+    {
+        CurrentXp += xp;
+        OnXpChanged?.Invoke();
+    }
+
+    public void UnlockBadge(string badgeName)
+    {
+        if (!Badges.Contains(badgeName))
+        {
+            Badges.Add(badgeName);
+            OnXpChanged?.Invoke();
+        }
+    }
+
+    private string GetRank(int xp)
+    {
+        if (xp >= 1000) return "Cyber Guardian";
+        if (xp >= 600) return "Ethical Hacker";
+        if (xp >= 300) return "White Hat Analyst";
+        if (xp >= 100) return "Script Kiddie";
+        return "Civilian";
+    }
 }

@@ -1,8 +1,121 @@
-<!-- DataLeaker.razor — Domain 4: Data Privacy -->
-<!-- Identify data-leaking nodes in a network graph -->
+@implements IDisposable
+
+<div class="hacker-hud">
+    <div class="hacker-stat">
+        <span class="hacker-stat-label">Time Remaining</span>
+        <span class="hacker-stat-value @(_timeLeft <= 10 ? "text-danger" : "")">@_timeLeft.ToString("D2")s</span>
+    </div>
+    <div class="hacker-stat text-end">
+        <span class="hacker-stat-label">Leaks Plugged</span>
+        <span class="hacker-stat-value text-success">@_score</span>
+    </div>
+</div>
+
+<div class="hacker-timer-container">
+    <div class="hacker-timer-fill @(_timeLeft <= 10 ? "danger" : "")" style="width: @((_timeLeft / 60.0) * 100)%"></div>
+</div>
+
+<div class="text-center py-4">
+    <h5 class="text-muted mb-4">IDENTIFY THE SUSPICIOUS APP PERMISSION:</h5>
+    
+    <div class="d-flex flex-column gap-3 mx-auto" style="max-width: 400px;">
+        @foreach (var perm in _currentPermissions)
+        {
+            <button class="hacker-card-item text-start border-0 text-light w-100" 
+                    style="background: rgba(255,255,255,0.05);"
+                    @onclick="() => CheckPermission(perm)" 
+                    disabled="@_isGameOver">
+                <div class="d-flex align-items-center">
+                    <i class="bi @perm.Icon fs-4 me-3" style="color: var(--hacker-primary);"></i>
+                    <div>
+                        <strong>@perm.App</strong><br/>
+                        <small class="text-muted">Requests: @perm.Permission</small>
+                    </div>
+                </div>
+            </button>
+        }
+    </div>
+</div>
 
 @code {
-    // TODO: Network graph with hidden data-leaking nodes to identify
-    // Brief: metadata, app permissions, oversharing
-    // Badge: Shadow Walker
+    [Parameter] public EventCallback<GameResult> OnComplete { get; set; }
+    
+    private int _timeLeft = 60;
+    private int _score = 0;
+    private bool _isGameOver = false;
+    private System.Timers.Timer? _timer;
+    private Random _rand = new Random();
+    
+    private List<PermItem> _currentPermissions = new();
+    
+    private List<PermItem> _safePerms = new() {
+        new PermItem { App = "Camera App", Permission = "Camera & Microphone", Icon = "bi-camera", IsLeaker = false },
+        new PermItem { App = "Maps & Nav", Permission = "Precise Location", Icon = "bi-geo-alt", IsLeaker = false },
+        new PermItem { App = "Messaging", Permission = "Contacts", Icon = "bi-chat-text", IsLeaker = false },
+        new PermItem { App = "Weather Widget", Permission = "Approximate Location", Icon = "bi-cloud-sun", IsLeaker = false },
+        new PermItem { App = "Gallery App", Permission = "Storage Access", Icon = "bi-images", IsLeaker = false }
+    };
+    
+    private List<PermItem> _leakerPerms = new() {
+        new PermItem { App = "Flashlight Free", Permission = "Contacts & Call Logs", Icon = "bi-flashlight", IsLeaker = true },
+        new PermItem { App = "Calculator Plus", Permission = "Precise Location", Icon = "bi-calculator", IsLeaker = true },
+        new PermItem { App = "Solitaire Game", Permission = "Microphone", Icon = "bi-controller", IsLeaker = true },
+        new PermItem { App = "PDF Viewer", Permission = "Send SMS", Icon = "bi-file-pdf", IsLeaker = true }
+    };
+
+    protected override void OnInitialized()
+    {
+        GenerateRound();
+        
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += async (s, e) => {
+            _timeLeft--;
+            if (_timeLeft <= 0) {
+                _isGameOver = true;
+                _timer.Stop();
+                await InvokeAsync(() => OnComplete.InvokeAsync(new GameResult { 
+                    Xp = _score * 12, 
+                    Badge = _score >= 8 ? "Shadow Walker" : "" 
+                }));
+            }
+            await InvokeAsync(StateHasChanged);
+        };
+        _timer.Start();
+    }
+    
+    private void GenerateRound()
+    {
+        _currentPermissions.Clear();
+        // Pick 1 leaker
+        _currentPermissions.Add(_leakerPerms[_rand.Next(_leakerPerms.Count)]);
+        // Pick 2 safe
+        var safe = _safePerms.OrderBy(x => _rand.Next()).Take(2).ToList();
+        _currentPermissions.AddRange(safe);
+        // Shuffle
+        _currentPermissions = _currentPermissions.OrderBy(x => _rand.Next()).ToList();
+    }
+
+    private void CheckPermission(PermItem item)
+    {
+        if (_isGameOver) return;
+        
+        if (item.IsLeaker)
+            _score++;
+        else
+            _score = Math.Max(0, _score - 1);
+            
+        GenerateRound();
+    }
+    
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+    
+    class PermItem {
+        public string App { get; set; } = "";
+        public string Permission { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public bool IsLeaker { get; set; }
+    }
 }

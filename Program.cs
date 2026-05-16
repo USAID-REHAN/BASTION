@@ -38,6 +38,9 @@ builder.Services.AddDbContext<BastionDbContext>(options =>
 // ── AI Services ──
 builder.Services.AddSingleton<GroqService>();
 
+// ── Gamification Services ──
+builder.Services.AddScoped<XpService>();
+
 // ── LexGuard Services ──
 builder.Services.AddScoped<DocumentAnalysisService>();
 builder.Services.AddScoped<PdfReportService>();

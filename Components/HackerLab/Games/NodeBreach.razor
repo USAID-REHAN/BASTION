@@ -1,9 +1,124 @@
-<!-- NodeBreach.razor — Domain 2: Network & WiFi Safety -->
-<!-- Route data packet through hostile network nodes -->
+@implements IDisposable
+
+<div class="hacker-hud">
+    <div class="hacker-stat">
+        <span class="hacker-stat-label">Time Remaining</span>
+        <span class="hacker-stat-value @(_timeLeft <= 10 ? "text-danger" : "")">@_timeLeft.ToString("D2")s</span>
+    </div>
+    <div class="hacker-stat text-end">
+        <span class="hacker-stat-label">Data Packets Routed</span>
+        <span class="hacker-stat-value text-success">@_score</span>
+    </div>
+</div>
+
+<div class="hacker-timer-container">
+    <div class="hacker-timer-fill @(_timeLeft <= 10 ? "danger" : "")" style="width: @((_timeLeft / 60.0) * 100)%"></div>
+</div>
+
+<div class="text-center py-4">
+    <h5 class="text-muted mb-4">CLICK SECURE NODES TO ROUTE TRAFFIC, AVOID COMPROMISED ONES:</h5>
+    
+    <div class="row justify-content-center">
+        @foreach (var node in _nodes)
+        {
+            <div class="col-4 mb-3">
+                <button class="w-100 p-3 rounded text-light fw-bold border-0"
+                        style="background: @(node.IsSafe ? (node.Clicked ? "#10b981" : "#374151") : (node.Clicked ? "#ef4444" : "#374151")); transition: all 0.2s; cursor: @(node.Clicked ? "default" : "pointer");"
+                        @onclick="() => CheckNode(node)"
+                        disabled="@(node.Clicked || _isGameOver)">
+                    <i class="bi @(node.IsSafe ? "bi-shield-lock" : "bi-wifi") fs-2 d-block mb-2"></i>
+                    @node.Name
+                </button>
+            </div>
+        }
+    </div>
+</div>
 
 @code {
-    // TODO: Route data packet avoiding fake hotspot nodes
-    // Brief: public WiFi risks, VPN, rogue APs
-    // Badge: Ghost Router
-    // Cross-link → IP Checker
+    [Parameter] public EventCallback<GameResult> OnComplete { get; set; }
+    
+    private int _timeLeft = 60;
+    private int _score = 0;
+    private bool _isGameOver = false;
+    private System.Timers.Timer? _timer;
+    private System.Timers.Timer? _nodeTimer;
+    private Random _rand = new Random();
+    
+    private List<NodeItem> _nodes = new();
+    private string[] _safeNames = { "VPN Tunnel", "WPA3 Network", "Corporate LAN", "HTTPS Proxy", "Tor Relay" };
+    private string[] _unsafeNames = { "Public WiFi", "Open AP", "Starbucks Free", "Rogue Node", "Airport WiFi" };
+
+    protected override void OnInitialized()
+    {
+        GenerateNodes();
+        
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += async (s, e) => {
+            _timeLeft--;
+            if (_timeLeft <= 0) {
+                _isGameOver = true;
+                _timer.Stop();
+                _nodeTimer?.Stop();
+                await InvokeAsync(() => OnComplete.InvokeAsync(new GameResult { 
+                    Xp = _score * 10, 
+                    Badge = _score >= 15 ? "Ghost Router" : "" 
+                }));
+            }
+            await InvokeAsync(StateHasChanged);
+        };
+        
+        _nodeTimer = new System.Timers.Timer(3000);
+        _nodeTimer.Elapsed += async (s, e) => {
+            if (!_isGameOver) {
+                GenerateNodes();
+                await InvokeAsync(StateHasChanged);
+            }
+        };
+        
+        _timer.Start();
+        _nodeTimer.Start();
+    }
+    
+    private void GenerateNodes()
+    {
+        _nodes.Clear();
+        for (int i = 0; i < 6; i++)
+        {
+            bool isSafe = _rand.Next(2) == 0;
+            _nodes.Add(new NodeItem {
+                Id = i,
+                IsSafe = isSafe,
+                Name = isSafe ? _safeNames[_rand.Next(_safeNames.Length)] : _unsafeNames[_rand.Next(_unsafeNames.Length)],
+                Clicked = false
+            });
+        }
+    }
+
+    private void CheckNode(NodeItem node)
+    {
+        if (_isGameOver || node.Clicked) return;
+        
+        node.Clicked = true;
+        if (node.IsSafe)
+        {
+            _score++;
+        }
+        else
+        {
+            _score = Math.Max(0, _score - 2); // Penalize
+        }
+    }
+    
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        _nodeTimer?.Dispose();
+    }
+    
+    class NodeItem {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public bool IsSafe { get; set; }
+        public bool Clicked { get; set; }
+    }
 }

@@ -11,10 +11,14 @@
 <PageTitle>BASTION — LexGuard</PageTitle>
 
 <div class="lex-page">
-    <!-- Header -->
     <div class="lex-page-header">
-        <span class="lex-icon">📜</span>
-        <h1>LexGuard</h1>
+        <div class="lex-icon">
+            <i class="bi bi-file-earmark-text"></i>
+        </div>
+        <div>
+            <h1>LexGuard</h1>
+            <p style="color: var(--text-muted); margin: 4px 0 0 0; font-size: 0.9rem;">AI-Powered Legal Document Protection</p>
+        </div>
     </div>
 
     <!-- Tabs -->
@@ -22,6 +26,18 @@
         <button class="lex-tab @(_activeTab == "analyze" ? "active" : "")"
                 @onclick='() => SwitchTab("analyze")'>
             <i class="bi bi-search"></i> Analyze
+        </button>
+        <button class="lex-tab @(_activeTab == "compare" ? "active" : "")"
+                @onclick='() => SwitchTab("compare")'>
+            <i class="bi bi-file-diff"></i> Compare
+        </button>
+        <button class="lex-tab @(_activeTab == "audit" ? "active" : "")"
+                @onclick='() => SwitchTab("audit")'>
+            <i class="bi bi-shield-check"></i> Audit
+        </button>
+        <button class="lex-tab @(_activeTab == "draft" ? "active" : "")"
+                @onclick='() => SwitchTab("draft")'>
+            <i class="bi bi-pen"></i> Smart Drafter
         </button>
         <button class="lex-tab @(_activeTab == "history" ? "active" : "")"
                 @onclick='() => SwitchTab("history")'>
@@ -186,8 +202,192 @@
                         </div>
                     </div>
                 }
+
+                <!-- Document Q&A Chat -->
+                @if (!string.IsNullOrEmpty(_currentRawText))
+                {
+                    <div class="lex-card" id="chat-section">
+                        <div class="lex-card-title">
+                            <i class="bi bi-chat-dots"></i> Chat with Document
+                        </div>
+                        <div class="lex-chat-container" style="background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--border-current); padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+                            <div style="max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 8px;">
+                                @if (!_chatHistory.Any())
+                                {
+                                    <div style="color: var(--text-muted); font-size: 0.9rem; font-style: italic; text-align: center; padding: 20px;">
+                                        Ask LexGuard any question about this document...
+                                    </div>
+                                }
+                                @foreach (var msg in _chatHistory)
+                                {
+                                    <div style="align-self: @(msg.Role == "user" ? "flex-end" : "flex-start"); background: @(msg.Role == "user" ? "rgba(65, 88, 208, 0.2)" : "rgba(255,255,255,0.05)"); border: 1px solid @(msg.Role == "user" ? "rgba(65, 88, 208, 0.4)" : "rgba(255,255,255,0.1)"); padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 0.9rem;">
+                                        @msg.Content
+                                    </div>
+                                }
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" class="gate-input" style="flex: 1; margin: 0;" placeholder="e.g., Are there any hidden fees?" @bind="_currentQuestion" @bind:event="oninput" @onkeyup="HandleChatKey" disabled="@_isChatting" />
+                                <button class="btn-lex btn-lex-primary" style="padding: 0 16px;" @onclick="SendChatMessage" disabled="@(_isChatting || string.IsNullOrWhiteSpace(_currentQuestion))">
+                                    @if (_isChatting) { <span class="lex-processing-spinner" style="width:14px;height:14px;border-width:2px;margin:0;"></span> } else { <i class="bi bi-send"></i> }
+                                </button>
+                            </div>
+                            @if (!string.IsNullOrEmpty(_chatError))
+                            {
+                                <div style="color: #EF4444; font-size: 0.8rem; margin-top: 4px;">@_chatError</div>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
         }
+    }
+
+    @* ═══════════ DRAFT TAB ═══════════ *@
+    @if (_activeTab == "draft")
+    {
+        <div class="lex-card">
+            <div class="lex-card-title">
+                <i class="bi bi-pen"></i> AI Smart Legal Drafter
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                Describe the contract or legal document you need. LexGuard will instantly generate a comprehensive, legally sound draft for you to review and copy.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <textarea class="gate-input" style="min-height: 120px; resize: vertical;"
+                          placeholder="e.g., 'I need an NDA for a freelance software developer in California. It should include a 2-year non-compete and a $50,000 penalty for data breaches.'"
+                          @bind="_draftPrompt"></textarea>
+
+                <button class="btn-lex btn-lex-primary" @onclick="GenerateDraft" disabled="@(_isDrafting || string.IsNullOrWhiteSpace(_draftPrompt))">
+                    @if (_isDrafting)
+                    {
+                        <span class="lex-processing-spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></span>
+                        <span>Drafting...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-magic"></i> <span>Generate Document</span>
+                    }
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_draftResult))
+            {
+                <div style="margin-top: 32px; border-top: 1px solid var(--border-current); padding-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0; font-size: 1.2rem;">Generated Draft</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-lex btn-lex-primary" @onclick="DownloadDraftPdf" style="font-size: 0.8rem; padding: 4px 12px;" disabled="@_isGeneratingDraftPdf">
+                                @if (_isGeneratingDraftPdf) { <span class="lex-processing-spinner" style="width:12px;height:12px;border-width:2px;margin:0;"></span> } else { <i class="bi bi-file-earmark-pdf"></i> } Download PDF
+                            </button>
+                            <button class="btn-lex btn-lex-ghost" @onclick="CopyDraft" style="font-size: 0.8rem; padding: 4px 12px;">
+                                <i class="bi bi-clipboard"></i> Copy to Clipboard
+                            </button>
+                        </div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--border-current); font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; color: var(--text-current); max-height: 500px; overflow-y: auto;">
+                        @_draftResult
+                    </div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_draftError))
+            {
+                <div class="lex-error" style="margin-top: 20px;">
+                    <i class="bi bi-exclamation-triangle"></i> @_draftError
+                </div>
+            }
+        </div>
+    }
+
+    @* ═══════════ COMPARE TAB ═══════════ *@
+    @if (_activeTab == "compare")
+    {
+        <div class="lex-card">
+            <div class="lex-card-title">
+                <i class="bi bi-file-diff"></i> AI Document Comparison
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                Paste two versions of a document to instantly analyze the legal implications of the changes.
+            </p>
+            <div style="display: flex; gap: 16px;">
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-weight: 500; font-size: 0.9rem;">Version A (Original)</label>
+                    <textarea class="gate-input" style="min-height: 150px; resize: vertical;" placeholder="Paste text of Version A..." @bind="_compareTextA"></textarea>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                    <label style="font-weight: 500; font-size: 0.9rem;">Version B (Modified)</label>
+                    <textarea class="gate-input" style="min-height: 150px; resize: vertical;" placeholder="Paste text of Version B..." @bind="_compareTextB"></textarea>
+                </div>
+            </div>
+            <button class="btn-lex btn-lex-primary" style="margin-top: 16px;" @onclick="CompareDocuments" disabled="@(_isComparing || string.IsNullOrWhiteSpace(_compareTextA) || string.IsNullOrWhiteSpace(_compareTextB))">
+                @if (_isComparing) { <span class="lex-processing-spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></span> } else { <i class="bi bi-magic"></i> } Compare Documents
+            </button>
+            
+            @if (!string.IsNullOrEmpty(_compareResult))
+            {
+                <div style="margin-top: 32px; border-top: 1px solid var(--border-current); padding-top: 24px;">
+                    <h3 style="margin: 0 0 16px 0; font-size: 1.2rem;">Comparison Results</h3>
+                    <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--border-current); font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; color: var(--text-current); max-height: 500px; overflow-y: auto;">
+                        @_compareResult
+                    </div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_compareError))
+            {
+                <div class="lex-error" style="margin-top: 20px;">
+                    <i class="bi bi-exclamation-triangle"></i> @_compareError
+                </div>
+            }
+        </div>
+    }
+
+    @* ═══════════ AUDIT TAB ═══════════ *@
+    @if (_activeTab == "audit")
+    {
+        <div class="lex-card">
+            <div class="lex-card-title">
+                <i class="bi bi-shield-check"></i> Compliance Auditor
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                Strictly audit a document for compliance against standard regulatory frameworks.
+            </p>
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <label style="font-weight: 500; font-size: 0.9rem;">Framework:</label>
+                <select class="gate-input" style="width: 200px; margin: 0;" @bind="_auditFramework">
+                    <option value="GDPR">GDPR (Europe)</option>
+                    <option value="CCPA">CCPA (California)</option>
+                    <option value="HIPAA">HIPAA (Healthcare)</option>
+                    <option value="PCI-DSS">PCI-DSS (Payments)</option>
+                </select>
+                @if (!string.IsNullOrEmpty(_currentRawText))
+                {
+                    <button class="btn-lex btn-lex-ghost" @onclick="LoadAnalyzerTextForAudit" style="font-size: 0.8rem; padding: 4px 12px;">
+                        <i class="bi bi-box-arrow-in-down"></i> Load Analyzed Document
+                    </button>
+                }
+            </div>
+            <textarea class="gate-input" style="min-height: 150px; resize: vertical; margin-top: 16px;" placeholder="Paste the policy or contract text here to audit..." @bind="_auditText"></textarea>
+            
+            <button class="btn-lex btn-lex-primary" style="margin-top: 16px;" @onclick="AuditCompliance" disabled="@(_isAuditing || string.IsNullOrWhiteSpace(_auditText))">
+                @if (_isAuditing) { <span class="lex-processing-spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></span> } else { <i class="bi bi-shield-check"></i> } Run Audit
+            </button>
+            
+            @if (!string.IsNullOrEmpty(_auditResult))
+            {
+                <div style="margin-top: 32px; border-top: 1px solid var(--border-current); padding-top: 24px;">
+                    <h3 style="margin: 0 0 16px 0; font-size: 1.2rem;">Audit Report</h3>
+                    <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; border: 1px solid var(--border-current); font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; color: var(--text-current); max-height: 500px; overflow-y: auto;">
+                        @_auditResult
+                    </div>
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(_auditError))
+            {
+                <div class="lex-error" style="margin-top: 20px;">
+                    <i class="bi bi-exclamation-triangle"></i> @_auditError
+                </div>
+            }
+        </div>
     }
 
     @* ═══════════ HISTORY TAB ═══════════ *@
@@ -208,13 +408,41 @@
     private string? _errorMessage;
     private bool _isGeneratingPdf;
 
+    // Drafter state
+    private string _draftPrompt = "";
+    private string _draftResult = "";
+    private string _draftError = "";
+    private bool _isDrafting;
+
     // Current analysis
     private AnalysisResult? _currentResult;
     private string _currentFileName = string.Empty;
     private string _currentFileType = string.Empty;
+    private string _currentRawText = string.Empty;
     private long _currentFileSize;
     private DateTime _currentAnalyzedAt;
     private int? _currentRecordId;
+
+    // Chat State
+    private string _currentQuestion = "";
+    private bool _isChatting;
+    private string _chatError = "";
+    private List<(string Role, string Content)> _chatHistory = new();
+    private bool _isGeneratingDraftPdf;
+
+    // Compare State
+    private string _compareTextA = "";
+    private string _compareTextB = "";
+    private string _compareResult = "";
+    private string _compareError = "";
+    private bool _isComparing;
+
+    // Audit State
+    private string _auditText = "";
+    private string _auditFramework = "GDPR";
+    private string _auditResult = "";
+    private string _auditError = "";
+    private bool _isAuditing;
 
     // History
     private List<LexGuardAnalysis> _historyList = new();
@@ -256,12 +484,14 @@
         try
         {
             var userId = AuthService.CurrentUser?.Email ?? "anonymous";
-            var (result, record) = await AnalysisService.AnalyzeDocumentAsync(
+            var (result, record, rawText) = await AnalysisService.AnalyzeDocumentAsync(
                 args.Stream, args.FileName, args.FileType, args.FileSize, userId);
 
             _currentResult = result;
             _currentAnalyzedAt = record.AnalyzedAt;
             _currentRecordId = record.Id;
+            _currentRawText = rawText;
+            _chatHistory.Clear();
             _state = PageState.Results;
             _historyCount++;
         }
@@ -323,6 +553,8 @@
             _currentFileSize = record.DocumentSizeBytes;
             _currentAnalyzedAt = record.AnalyzedAt;
             _currentRecordId = record.Id;
+            _currentRawText = ""; // Not available for historical records
+            _chatHistory.Clear();
             _state = PageState.Results;
             _activeTab = "analyze";
         }
@@ -368,5 +600,154 @@
         if (bytes < 1024) return $"{bytes} B";
         if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
         return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+
+    // ── Drafting ──
+
+    private async Task GenerateDraft()
+    {
+        if (string.IsNullOrWhiteSpace(_draftPrompt)) return;
+        
+        _isDrafting = true;
+        _draftResult = "";
+        _draftError = "";
+        StateHasChanged();
+
+        try
+        {
+            _draftResult = await AnalysisService.DraftContractAsync(_draftPrompt);
+        }
+        catch (Exception ex)
+        {
+            _draftError = $"Failed to draft document: {ex.Message}";
+        }
+
+        _isDrafting = false;
+        StateHasChanged();
+    }
+
+    private async Task CopyDraft()
+    {
+        if (!string.IsNullOrEmpty(_draftResult))
+        {
+            await JS.InvokeVoidAsync("bastionClipboard.copy", _draftResult);
+        }
+    }
+
+    private async Task DownloadDraftPdf()
+    {
+        if (string.IsNullOrEmpty(_draftResult)) return;
+        
+        _isGeneratingDraftPdf = true;
+        StateHasChanged();
+        
+        try
+        {
+            var pdfBytes = PdfService.GenerateDraftPdf(_draftResult);
+            var base64 = Convert.ToBase64String(pdfBytes);
+            var reportName = $"LexGuard_Draft_{DateTime.UtcNow:yyyyMMdd_HHmm}.pdf";
+            await JS.InvokeVoidAsync("bastionLexGuard.downloadFile", reportName, "application/pdf", base64);
+        }
+        catch (Exception ex)
+        {
+            _draftError = $"PDF generation failed: {ex.Message}";
+        }
+
+        _isGeneratingDraftPdf = false;
+        StateHasChanged();
+    }
+
+    // ── Q&A Chat ──
+
+    private async Task HandleChatKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_currentQuestion) && !_isChatting)
+        {
+            await SendChatMessage();
+        }
+    }
+
+    private async Task SendChatMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_currentQuestion) || string.IsNullOrEmpty(_currentRawText)) return;
+
+        var userQ = _currentQuestion.Trim();
+        _currentQuestion = "";
+        _chatError = "";
+        _isChatting = true;
+        
+        _chatHistory.Add(("user", userQ));
+        StateHasChanged();
+
+        try
+        {
+            var response = await AnalysisService.ChatWithDocumentAsync(_currentRawText, userQ, _chatHistory.TakeLast(6).ToList());
+            _chatHistory.Add(("assistant", response));
+        }
+        catch (Exception ex)
+        {
+            _chatError = $"Chat failed: {ex.Message}";
+            _chatHistory.RemoveAt(_chatHistory.Count - 1); // remove failed user message
+            _currentQuestion = userQ; // restore question
+        }
+
+        _isChatting = false;
+        StateHasChanged();
+    }
+
+    // ── Compare ──
+
+    private async Task CompareDocuments()
+    {
+        if (string.IsNullOrWhiteSpace(_compareTextA) || string.IsNullOrWhiteSpace(_compareTextB)) return;
+
+        _isComparing = true;
+        _compareResult = "";
+        _compareError = "";
+        StateHasChanged();
+
+        try
+        {
+            _compareResult = await AnalysisService.CompareDocumentsAsync(_compareTextA, _compareTextB);
+        }
+        catch (Exception ex)
+        {
+            _compareError = $"Comparison failed: {ex.Message}";
+        }
+
+        _isComparing = false;
+        StateHasChanged();
+    }
+
+    // ── Audit ──
+
+    private void LoadAnalyzerTextForAudit()
+    {
+        if (!string.IsNullOrEmpty(_currentRawText))
+        {
+            _auditText = _currentRawText;
+        }
+    }
+
+    private async Task AuditCompliance()
+    {
+        if (string.IsNullOrWhiteSpace(_auditText)) return;
+
+        _isAuditing = true;
+        _auditResult = "";
+        _auditError = "";
+        StateHasChanged();
+
+        try
+        {
+            _auditResult = await AnalysisService.AuditComplianceAsync(_auditText, _auditFramework);
+        }
+        catch (Exception ex)
+        {
+            _auditError = $"Audit failed: {ex.Message}";
+        }
+
+        _isAuditing = false;
+        StateHasChanged();
     }
 }

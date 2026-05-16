@@ -8,7 +8,7 @@ namespace BASTION.Services.Finance;
 public class FinShieldModule : IModule
 {
     public string Name => "FinShield";
-    public string Icon => "💰";
+    public string Icon => "bi-currency-exchange";
     public string RouteUrl => "/finshield";
     public string Description => "Fraud protection — URL scanner, message analyzer, scam feed, education";
     public string PrimaryHex => "#059669";

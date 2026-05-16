@@ -8,7 +8,7 @@ namespace BASTION.Services.Gamification;
 public class HackerLabModule : IModule
 {
     public string Name => "HackerLab";
-    public string Icon => "🎮";
+    public string Icon => "bi-controller";
     public string RouteUrl => "/hackerlab";
     public string Description => "Security academy — 5 domains, mini-games, XP, badges, rank progression";
     public string PrimaryHex => "#7C3AED";
