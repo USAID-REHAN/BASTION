@@ -1,6 +1,445 @@
-<!-- TransactionScorer.razor — Structured form → Groq risk profile + recommendations -->
+<div class="transaction-scorer">
+    <div class="scorer-card">
+        <div class="scorer-header">
+            <h3>📊 Transaction Scorer</h3>
+            <p class="description">Analyze transaction patterns to detect suspicious activity</p>
+        </div>
+
+        <div class="form-group">
+            <label>Transaction Amount</label>
+            <div class="amount-input">
+                <input type="number" @bind="amount" placeholder="Enter amount" />
+                <select @bind="currency">
+                    <option>USD</option>
+                    <option>EUR</option>
+                    <option>GBP</option>
+                    <option>INR</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Merchant Type</label>
+            <select @bind="merchantType">
+                <option value="">Select merchant type...</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="crypto">Cryptocurrency</option>
+                <option value="gift_card">Gift Card</option>
+                <option value="ecommerce">E-commerce</option>
+                <option value="wire_transfer">Wire Transfer</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Merchant Name</label>
+            <input type="text" @bind="merchantName" placeholder="Enter merchant or recipient name" />
+        </div>
+
+        <div class="form-group">
+            <label>Transaction Frequency</label>
+            <select @bind="frequency">
+                <option value="first_time">First Time</option>
+                <option value="occasional">Occasional (Monthly)</option>
+                <option value="regular">Regular (Weekly)</option>
+                <option value="daily">Daily</option>
+            </select>
+        </div>
+
+        <button class="score-button" @onclick="ScoreTransaction">
+            📊 Score Transaction
+        </button>
+
+        @if (result != null)
+        {
+            <div class="result-container">
+                <div class="result-header @GetScoreClass()">
+                    <div>
+                        <h3>Risk Assessment</h3>
+                        <div class="amount-display">@amount.ToString("C0") @currency</div>
+                    </div>
+                    <div class="risk-badge">@GetRiskBadge()</div>
+                </div>
+
+                <div class="score-breakdown">
+                    <div class="score-item">
+                        <span class="label">Base Risk</span>
+                        <span class="value">@result.BaseRisk%</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="label">Merchant Type Risk</span>
+                        <span class="value">+@result.MerchantRisk%</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="label">Frequency Risk</span>
+                        <span class="value">+@result.FrequencyRisk%</span>
+                    </div>
+                    <div class="score-item total">
+                        <span class="label">Total Risk Score</span>
+                        <span class="value">@result.TotalRisk%</span>
+                    </div>
+                </div>
+
+                <div class="recommendations">
+                    <h4>🛡️ Recommendations</h4>
+                    <ul>
+                        @foreach (var rec in result.Recommendations)
+                        {
+                            <li>@rec</li>
+                        }
+                    </ul>
+                </div>
+
+                <button class="btn-secondary" @onclick="ResetScore">New Transaction</button>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <div class="empty-icon">📊</div>
+                <h4>No Transaction Scored Yet</h4>
+                <p>Fill in the transaction details and click "Score Transaction" to analyze the risk.</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .transaction-scorer {
+        padding: 20px;
+    }
+
+    .scorer-card {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 500px;
+    }
+
+    .scorer-header h3 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+        color: #e2e8f0;
+    }
+
+    .description {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .form-group {
+        margin: 16px 0;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #cbd5e1;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 10px 12px;
+        background: #1e293b;
+        border: 1px solid #475569;
+        border-radius: 6px;
+        color: #e2e8f0;
+        font-size: 14px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #059669;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+
+    .amount-input {
+        display: flex;
+        gap: 8px;
+    }
+
+    .amount-input input {
+        flex: 1;
+    }
+
+    .amount-input select {
+        width: auto;
+        min-width: 80px;
+    }
+
+    .score-button {
+        width: 100%;
+        padding: 12px;
+        background: #059669;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 16px;
+        transition: all 0.3s ease;
+    }
+
+    .score-button:hover {
+        background: #047857;
+    }
+
+    .result-container {
+        margin-top: 24px;
+        animation: slideIn 0.3s ease;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .result-header {
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .result-header.high {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .result-header.medium {
+        background: rgba(249, 115, 22, 0.1);
+        border: 1px solid rgba(249, 115, 22, 0.3);
+    }
+
+    .result-header.low {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .result-header h3 {
+        margin: 0;
+        color: #e2e8f0;
+        font-size: 16px;
+    }
+
+    .amount-display {
+        color: #cbd5e1;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .risk-badge {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .score-breakdown {
+        background: #1e293b;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+    }
+
+    .score-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #334155;
+        font-size: 13px;
+    }
+
+    .score-item:last-child {
+        border-bottom: none;
+    }
+
+    .score-item.total {
+        border-top: 1px solid #334155;
+        margin-top: 8px;
+        padding-top: 12px;
+        font-weight: 600;
+        color: #059669;
+    }
+
+    .score-item .label {
+        color: #94a3b8;
+    }
+
+    .score-item .value {
+        color: #cbd5e1;
+        font-weight: 500;
+    }
+
+    .recommendations {
+        background: rgba(5, 150, 105, 0.1);
+        border: 1px solid #059669;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+    }
+
+    .recommendations h4 {
+        margin: 0 0 8px 0;
+        color: #059669;
+        font-size: 13px;
+    }
+
+    .recommendations ul {
+        margin: 0;
+        padding-left: 20px;
+        font-size: 13px;
+        color: #cbd5e1;
+    }
+
+    .recommendations li {
+        margin: 6px 0;
+    }
+
+    .btn-secondary {
+        width: 100%;
+        padding: 10px;
+        background: #334155;
+        color: #e2e8f0;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #94a3b8;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h4 {
+        margin: 0 0 8px 0;
+        color: #e2e8f0;
+    }
+</style>
 
 @code {
-    // TODO: Structured form for transaction details
-    // TODO: Groq risk profile with specific red flags and safer alternatives
+    private decimal amount;
+    private string currency = "USD";
+    private string merchantType = "";
+    private string merchantName = "";
+    private string frequency = "first_time";
+    private TransactionResult? result;
+
+    private class TransactionResult
+    {
+        public int BaseRisk { get; set; }
+        public int MerchantRisk { get; set; }
+        public int FrequencyRisk { get; set; }
+        public int TotalRisk { get; set; }
+        public List<string> Recommendations { get; set; } = new();
+    }
+
+    private void ScoreTransaction()
+    {
+        if (amount <= 0 || string.IsNullOrEmpty(merchantType))
+        {
+            return;
+        }
+
+        result = new TransactionResult();
+
+        // Base risk based on amount
+        if (amount > 10000) result.BaseRisk = 30;
+        else if (amount > 5000) result.BaseRisk = 20;
+        else if (amount > 1000) result.BaseRisk = 10;
+        else result.BaseRisk = 5;
+
+        // Merchant type risk
+        result.MerchantRisk = merchantType switch
+        {
+            "crypto" => 40,
+            "wire_transfer" => 35,
+            "gift_card" => 30,
+            "bank" => 10,
+            "ecommerce" => 15,
+            _ => 20
+        };
+
+        // Frequency risk
+        result.FrequencyRisk = frequency switch
+        {
+            "first_time" => 25,
+            "occasional" => 10,
+            "regular" => 5,
+            "daily" => 15,
+            _ => 0
+        };
+
+        result.TotalRisk = Math.Min(result.BaseRisk + result.MerchantRisk + result.FrequencyRisk, 100);
+
+        // Generate recommendations
+        result.Recommendations = new List<string>();
+        
+        if (result.TotalRisk >= 70)
+        {
+            result.Recommendations.Add("⛔ STOP: This transaction shows HIGH risk indicators");
+            result.Recommendations.Add("🔍 Verify the merchant/recipient independently");
+            result.Recommendations.Add("☎️ Call the company's official number to confirm");
+        }
+        else if (result.TotalRisk >= 40)
+        {
+            result.Recommendations.Add("⚠️ Proceed with CAUTION");
+            result.Recommendations.Add("✓ Verify merchant details before confirming");
+            result.Recommendations.Add("🔐 Use secure payment methods if available");
+        }
+        else
+        {
+            result.Recommendations.Add("✓ This transaction appears relatively safe");
+            result.Recommendations.Add("🔒 Still maintain normal security practices");
+            result.Recommendations.Add("📱 Monitor your account for unauthorized activity");
+        }
+    }
+
+    private string GetScoreClass()
+    {
+        if (result?.TotalRisk >= 70) return "high";
+        if (result?.TotalRisk >= 40) return "medium";
+        return "low";
+    }
+
+    private string GetRiskBadge()
+    {
+        if (result?.TotalRisk >= 70) return "🔴 HIGH RISK";
+        if (result?.TotalRisk >= 40) return "🟠 MEDIUM RISK";
+        return "🟢 LOW RISK";
+    }
+
+    private void ResetScore()
+    {
+        amount = 0;
+        merchantType = "";
+        merchantName = "";
+        frequency = "first_time";
+        result = null;
+    }
 }

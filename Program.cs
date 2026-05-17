@@ -37,6 +37,15 @@ builder.Services.AddDbContext<BastionDbContext>(options =>
 
 // ── AI Services ──
 builder.Services.AddSingleton<GroqService>();
+builder.Services.AddSingleton<GroqVisionService>();
+
+// ── FinShield Services (Finance) ──
+builder.Services.AddHttpClient<FinShieldService>()
+    .ConfigureHttpClient(client =>
+    {
+        client.DefaultRequestHeaders.Add("User-Agent", "BASTION-FinShield/1.0");
+        client.Timeout = TimeSpan.FromSeconds(30);
+    });
 
 // ── LexGuard Services ──
 builder.Services.AddScoped<DocumentAnalysisService>();
@@ -47,7 +56,8 @@ builder.Services.AddScoped<IModule, HomescreenModule>();        // Dashboard
 builder.Services.AddScoped<IModule, GateKeeperModule>();        // Authentication
 builder.Services.AddScoped<IModule, CyberShieldModule>();       // Device Protection
 builder.Services.AddScoped<IModule, LexGuardModule>();          // Document Protection
-builder.Services.AddScoped<IModule, FinShieldModule>();         // Financial Fraud Protection
+  builder.Services.AddScoped<IModule, FinShieldModule>();       // Financial Fraud Protectionz
+
 builder.Services.AddScoped<IModule, HackerLabModule>();         // Security Academy
 builder.Services.AddScoped<IModule, BASTION.Services.Settings.SettingsModule>(); // Personalisation
 

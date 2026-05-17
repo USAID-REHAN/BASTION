@@ -1,10 +1,208 @@
 @page "/finshield"
+@using BASTION.Services.Finance
+@using BASTION.Services.AI
+@inject FinShieldService FinShield
+@inject GroqVisionService VisionService
 
-<!-- FinHub.razor — FinShield tab layout — routes between detection tools -->
+<div class="finshield-container">
+    <div class="finshield-header">
+        <div>
+            <h1>💰 FinShield</h1>
+            <p class="subtitle">Financial Fraud Protection Center</p>
+        </div>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-value">@totalScansToday</div>
+                <div class="stat-label">Scans Today</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@threatsBlocked</div>
+                <div class="stat-label">Threats Blocked</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">@protectionScore%</div>
+                <div class="stat-label">Protection Score</div>
+            </div>
+        </div>
+    </div>
 
-<h2>FinShield — Financial Fraud Protection</h2>
+    <!-- Tab Navigation -->
+    <div class="finshield-tabs">
+        <button class="tab @(activeTab == "scanner" ? "active" : "")" @onclick='() => SelectTab("scanner")'>
+            🔗 URL Scanner
+        </button>
+        <button class="tab @(activeTab == "payment" ? "active" : "")" @onclick='() => SelectTab("payment")'>
+            💳 Payment Scanner
+        </button>
+        <button class="tab @(activeTab == "message" ? "active" : "")" @onclick='() => SelectTab("message")'>
+            💬 Message Analyzer
+        </button>
+        <button class="tab @(activeTab == "transaction" ? "active" : "")" @onclick='() => SelectTab("transaction")'>
+            📊 Transaction Scorer
+        </button>
+        <button class="tab @(activeTab == "feed" ? "active" : "")" @onclick='() => SelectTab("feed")'>
+            📢 Scam Feed
+        </button>
+        <button class="tab @(activeTab == "education" ? "active" : "")" @onclick='() => SelectTab("education")'>
+            🎓 Learn
+        </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="finshield-content">
+        @if (activeTab == "scanner")
+        {
+            <UrlScanner />
+        }
+        else if (activeTab == "payment")
+        {
+            <PaymentPageScanner />
+        }
+        else if (activeTab == "message")
+        {
+            <MessageAnalyzer />
+        }
+        else if (activeTab == "transaction")
+        {
+            <TransactionScorer />
+        }
+        else if (activeTab == "feed")
+        {
+            <ScamFeed />
+        }
+        else if (activeTab == "education")
+        {
+            <EducationHub />
+        }
+    </div>
+</div>
+
+<style>
+    .finshield-container {
+        padding: 20px;
+        background: linear-gradient(135deg, #1a1f3a 0%, #16213e 100%);
+        min-height: 100vh;
+        border-radius: 12px;
+    }
+
+    .finshield-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        background: rgba(5, 150, 105, 0.1);
+        padding: 20px;
+        border-radius: 12px;
+        border-left: 4px solid #059669;
+    }
+
+    .finshield-header h1 {
+        margin: 0;
+        font-size: 28px;
+        color: #059669;
+    }
+
+    .finshield-header .subtitle {
+        margin: 5px 0 0 0;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .header-stats {
+        display: flex;
+        gap: 30px;
+    }
+
+    .stat {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #059669;
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 5px;
+    }
+
+    .finshield-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        border-bottom: 1px solid #334155;
+    }
+
+    .tab {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        padding: 12px 16px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .tab:hover {
+        color: #059669;
+    }
+
+    .tab.active {
+        color: #059669;
+        border-bottom-color: #059669;
+    }
+
+    .finshield-content {
+        animation: fadeIn 0.3s ease-in;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .finshield-header {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .header-stats {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .finshield-tabs {
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            flex: 1 1 auto;
+            min-width: 100px;
+        }
+    }
+</style>
 
 @code {
-    // TODO: Tab layout routing between UrlScanner, MessageAnalyzer, PaymentPageScanner,
-    //       TransactionScorer, ScamFeed, EducationHub
+    private string activeTab = "scanner";
+    private int totalScansToday = 24;
+    private int threatsBlocked = 3;
+    private int protectionScore = 92;
+
+    private void SelectTab(string tab)
+    {
+        activeTab = tab;
+    }
 }

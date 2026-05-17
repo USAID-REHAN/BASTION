@@ -1,7 +1,483 @@
-<!-- UrlScanner.razor — URL paste → Safe Browsing + URLScan + Groq → Scam Score -->
+@using BASTION.Services.Finance
+
+<div class="url-scanner">
+    <div class="scanner-card">
+        <div class="scanner-header">
+            <h3>🔗 URL Scanner</h3>
+            <p class="description">Scan URLs for phishing, malware, and fraud indicators</p>
+        </div>
+
+        <div class="scanner-input-group">
+            <input 
+                type="text" 
+                class="url-input" 
+                @bind="urlInput" 
+                @onkeydown="@HandleKeyDown"
+                placeholder="Paste URL here (e.g., https://example.com)..."
+                disabled="@isScanning"
+            />
+            <button class="scan-button @(isScanning ? "loading" : "")" @onclick="ScanUrl" disabled="@isScanning">
+                @if (isScanning)
+                {
+                    <span class="spinner"></span>
+                    <span>Scanning...</span>
+                }
+                else
+                {
+                    <span>🔍 Scan</span>
+                }
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-error">
+                ⚠️ @errorMessage
+            </div>
+        }
+
+        @if (result != null)
+        {
+            <div class="result-container">
+                <div class="result-header @GetVerdictClass()">
+                    <div class="verdict">
+                        <div class="verdict-text">@result.Verdict</div>
+                        <div class="risk-score">Risk Score: <strong>@result.ScamProbabilityScore%</strong></div>
+                    </div>
+                    <div class="risk-meter">
+                        <div class="meter-bar" style="width: @result.ScamProbabilityScore%"></div>
+                    </div>
+                </div>
+
+                @if (result.Flags.Any())
+                {
+                    <div class="flags-section">
+                        <h4>⚠️ Detected Issues:</h4>
+                        <ul class="flags-list">
+                            @foreach (var flag in result.Flags)
+                            {
+                                <li class="flag-item">@flag</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <div class="scan-details">
+                    <div class="detail-item">
+                        <span class="label">URL:</span>
+                        <span class="value">@urlInput</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="label">Scanned at:</span>
+                        <span class="value">@scanTime?.ToString("g")</span>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-secondary" @onclick="() => { result = null; errorMessage = null; }">
+                        Clear Results
+                    </button>
+                    <button class="btn-primary" @onclick="() => AddToBlockList(urlInput)">
+                        Block URL
+                    </button>
+                </div>
+            </div>
+        }
+        else if (!isScanning && result == null && !string.IsNullOrWhiteSpace(urlInput))
+        {
+            <div class="prompt">
+                💡 Ready to scan. Click "Scan" or press Enter to analyze this URL.
+            </div>
+        }
+        else if (result == null)
+        {
+            <div class="empty-state">
+                <div class="empty-icon">🔗</div>
+                <h4>No URL Scanned Yet</h4>
+                <p>Paste a suspicious URL above to check for phishing, malware, and fraud indicators.</p>
+                <div class="tip-box">
+                    <strong>💡 Quick Tips:</strong>
+                    <ul>
+                        <li>Check sender URLs in suspicious emails</li>
+                        <li>Verify payment gateway URLs before entering credentials</li>
+                        <li>Look for misspelled domain names</li>
+                        <li>Avoid clicking links in unsolicited messages</li>
+                    </ul>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .url-scanner {
+        padding: 20px;
+    }
+
+    .scanner-card {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 24px;
+    }
+
+    .scanner-header h3 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+        color: #e2e8f0;
+    }
+
+    .description {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .scanner-input-group {
+        display: flex;
+        gap: 12px;
+        margin: 20px 0;
+    }
+
+    .url-input {
+        flex: 1;
+        padding: 12px 16px;
+        background: #1e293b;
+        border: 1px solid #475569;
+        border-radius: 8px;
+        color: #e2e8f0;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .url-input:focus {
+        outline: none;
+        border-color: #059669;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+    }
+
+    .url-input:disabled {
+        background: #0f172a;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .scan-button {
+        padding: 12px 24px;
+        background: #059669;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .scan-button:hover:not(:disabled) {
+        background: #047857;
+        transform: translateY(-2px);
+    }
+
+    .scan-button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin: 16px 0;
+        font-size: 14px;
+    }
+
+    .alert-error {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+    }
+
+    .result-container {
+        margin-top: 20px;
+        animation: slideIn 0.3s ease;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .result-header {
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .result-header.safe {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .result-header.warning {
+        background: rgba(249, 115, 22, 0.1);
+        border: 1px solid rgba(249, 115, 22, 0.3);
+    }
+
+    .result-header.danger {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .verdict {
+        flex: 1;
+    }
+
+    .verdict-text {
+        font-size: 18px;
+        font-weight: 600;
+        color: #e2e8f0;
+        margin-bottom: 8px;
+    }
+
+    .risk-score {
+        font-size: 14px;
+        color: #cbd5e1;
+    }
+
+    .risk-meter {
+        width: 200px;
+        height: 8px;
+        background: #1e293b;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-left: 20px;
+    }
+
+    .meter-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+        transition: width 0.5s ease;
+    }
+
+    .flags-section {
+        margin-bottom: 20px;
+    }
+
+    .flags-section h4 {
+        margin: 0 0 12px 0;
+        color: #e2e8f0;
+        font-size: 14px;
+    }
+
+    .flags-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .flag-item {
+        padding: 10px 12px;
+        background: #1e293b;
+        border-left: 3px solid #ef4444;
+        border-radius: 4px;
+        color: #cbd5e1;
+        font-size: 13px;
+    }
+
+    .scan-details {
+        background: #1e293b;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 16px;
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #334155;
+        font-size: 13px;
+    }
+
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .detail-item .label {
+        color: #94a3b8;
+        font-weight: 500;
+    }
+
+    .detail-item .value {
+        color: #cbd5e1;
+        word-break: break-all;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .btn-primary, .btn-secondary {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background: #059669;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #047857;
+    }
+
+    .btn-secondary {
+        background: #334155;
+        color: #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #94a3b8;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h4 {
+        margin: 0 0 8px 0;
+        color: #e2e8f0;
+    }
+
+    .tip-box {
+        background: rgba(5, 150, 105, 0.1);
+        border: 1px solid #059669;
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 16px;
+        text-align: left;
+    }
+
+    .tip-box strong {
+        color: #059669;
+    }
+
+    .tip-box ul {
+        margin: 8px 0 0 0;
+        padding-left: 20px;
+        font-size: 13px;
+    }
+
+    .prompt {
+        background: rgba(5, 150, 105, 0.1);
+        border: 1px solid #059669;
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: #cbd5e1;
+        font-size: 14px;
+    }
+</style>
 
 @code {
-    // TODO: URL paste input field
-    // TODO: Google Safe Browsing + URLScan.io + Groq URL structure analysis
-    // TODO: 0–100 Scam Probability Score with color-coded verdict
+    [Inject]
+    private FinShieldService? FinShield { get; set; }
+
+    private string urlInput = "";
+    private ScamAnalysisResult? result;
+    private bool isScanning = false;
+    private string errorMessage = "";
+    private DateTime? scanTime;
+
+    private async Task ScanUrl()
+    {
+        if (string.IsNullOrWhiteSpace(urlInput))
+        {
+            errorMessage = "Please enter a URL to scan";
+            return;
+        }
+
+        errorMessage = "";
+        isScanning = true;
+
+        try
+        {
+            if (FinShield != null)
+            {
+                result = await FinShield.ScanUrlAsync(urlInput);
+                scanTime = DateTime.Now;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Scan failed: {ex.Message}";
+            result = null;
+        }
+        finally
+        {
+            isScanning = false;
+        }
+    }
+
+    private Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !isScanning)
+        {
+            return ScanUrl();
+        }
+        return Task.CompletedTask;
+    }
+
+    private string GetVerdictClass()
+    {
+        if (result?.ScamProbabilityScore >= 75) return "danger";
+        if (result?.ScamProbabilityScore >= 50) return "warning";
+        return "safe";
+    }
+
+    private void AddToBlockList(string url)
+    {
+        // TODO: Implement block list functionality
+    }
 }

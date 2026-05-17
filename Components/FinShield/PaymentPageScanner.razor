@@ -1,6 +1,542 @@
-<!-- PaymentPageScanner.razor — Screenshot upload → Groq Vision → anomaly report -->
+@using BASTION.Services.AI
+
+<div class="payment-scanner">
+    <div class="scanner-card">
+        <div class="scanner-header">
+            <h3>💳 Payment Page Scanner</h3>
+            <p class="description">Upload screenshots to detect phishing and payment fraud</p>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-area @(isDragging ? "dragging" : "")" 
+                 @ondrop="HandleDrop" 
+                 @ondragover="HandleDragOver" 
+                 @ondragleave="HandleDragLeave">
+                
+                @if (!isAnalyzing && uploadedFileName == null)
+                {
+                    <div class="upload-content">
+                        <div class="upload-icon">📷</div>
+                        <h4>Upload Payment Page Screenshot</h4>
+                        <p>Drag and drop your image here or click to browse</p>
+                        <InputFile OnChange="@OnFileSelected" accept="image/*" />
+                        <p class="file-info">Supported: JPG, PNG, GIF (max 5MB)</p>
+                    </div>
+                }
+                else if (isAnalyzing)
+                {
+                    <div class="analyzing">
+                        <div class="spinner"></div>
+                        <p>🔍 Analyzing image for phishing indicators...</p>
+                        <p class="sub-text">This may take a few seconds</p>
+                    </div>
+                }
+                else if (uploadedFileName != null)
+                {
+                    <div class="uploaded">
+                        <div class="checkmark">✓</div>
+                        <p>@uploadedFileName</p>
+                        <button class="btn-secondary" @onclick="ResetUpload">Choose Another</button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-error">
+                ⚠️ @errorMessage
+            </div>
+        }
+
+        @if (visionResult != null)
+        {
+            <div class="result-container">
+                <div class="result-header @GetRiskClass()">
+                    <div>
+                        <h3>Analysis Results</h3>
+                        <div class="risk-indicator">
+                            Risk Score: <strong>@visionResult.RiskScore%</strong>
+                        </div>
+                    </div>
+                    <div class="risk-level">
+                        @GetRiskLevel()
+                    </div>
+                </div>
+
+                <div class="summary-section">
+                    <h4>📋 Summary</h4>
+                    <p>@visionResult.Summary</p>
+                </div>
+
+                @if (visionResult.Anomalies.Any())
+                {
+                    <div class="anomalies-section">
+                        <h4>🚨 Detected Anomalies</h4>
+                        <ul class="anomalies-list">
+                            @foreach (var anomaly in visionResult.Anomalies)
+                            {
+                                <li class="anomaly-item">@anomaly</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <div class="action-buttons">
+                    <button class="btn-secondary" @onclick="ClearResults">
+                        Clear Results
+                    </button>
+                    <button class="btn-primary" @onclick="ReportPhishing">
+                        Report as Phishing
+                    </button>
+                </div>
+            </div>
+        }
+        else if (!isAnalyzing && uploadedFileName == null)
+        {
+            <div class="tips-section">
+                <h4>💡 What We Check For:</h4>
+                <div class="tips-grid">
+                    <div class="tip">
+                        <div class="tip-icon">🔒</div>
+                        <strong>HTTPS Verification</strong>
+                        <p>Checks for missing or fake security indicators</p>
+                    </div>
+                    <div class="tip">
+                        <div class="tip-icon">📏</div>
+                        <strong>Logo Consistency</strong>
+                        <p>Detects stretched or misaligned logos</p>
+                    </div>
+                    <div class="tip">
+                        <div class="tip-icon">🔤</div>
+                        <strong>Font Anomalies</strong>
+                        <p>Identifies non-standard typography</p>
+                    </div>
+                    <div class="tip">
+                        <div class="tip-icon">📐</div>
+                        <strong>Layout Analysis</strong>
+                        <p>Compares against legitimate templates</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .payment-scanner {
+        padding: 20px;
+    }
+
+    .scanner-card {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 24px;
+    }
+
+    .scanner-header h3 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+        color: #e2e8f0;
+    }
+
+    .description {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .upload-section {
+        margin: 24px 0;
+    }
+
+    .upload-area {
+        border: 2px dashed #475569;
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #1e293b;
+    }
+
+    .upload-area:hover {
+        border-color: #059669;
+        background: rgba(5, 150, 105, 0.05);
+    }
+
+    .upload-area.dragging {
+        border-color: #059669;
+        background: rgba(5, 150, 105, 0.15);
+    }
+
+    .upload-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+    }
+
+    .upload-area h4 {
+        margin: 0 0 8px 0;
+        color: #e2e8f0;
+        font-size: 18px;
+    }
+
+    .upload-area p {
+        margin: 4px 0;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .upload-area :deep(input[type="file"]) {
+        display: none;
+    }
+
+    .file-info {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 12px;
+    }
+
+    .analyzing {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .spinner {
+        display: inline-block;
+        width: 32px;
+        height: 32px;
+        border: 3px solid rgba(5, 150, 105, 0.3);
+        border-top-color: #059669;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .sub-text {
+        color: #64748b !important;
+        font-size: 12px !important;
+    }
+
+    .uploaded {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .checkmark {
+        font-size: 48px;
+        color: #22c55e;
+    }
+
+    .uploaded p {
+        margin: 0;
+        color: #cbd5e1;
+        font-weight: 500;
+    }
+
+    .btn-secondary {
+        padding: 10px 16px;
+        background: #334155;
+        color: #e2e8f0;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+        background: #475569;
+    }
+
+    .alert-error {
+        padding: 12px 16px;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: 8px;
+        color: #fca5a5;
+        margin: 16px 0;
+        font-size: 14px;
+    }
+
+    .result-container {
+        margin-top: 24px;
+        animation: slideIn 0.3s ease;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .result-header {
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .result-header.high {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .result-header.medium {
+        background: rgba(249, 115, 22, 0.1);
+        border: 1px solid rgba(249, 115, 22, 0.3);
+    }
+
+    .result-header.low {
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .result-header h3 {
+        margin: 0;
+        color: #e2e8f0;
+        font-size: 16px;
+    }
+
+    .risk-indicator {
+        color: #cbd5e1;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .risk-level {
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .summary-section {
+        background: #1e293b;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+    }
+
+    .summary-section h4 {
+        margin: 0 0 12px 0;
+        color: #e2e8f0;
+        font-size: 14px;
+    }
+
+    .summary-section p {
+        margin: 0;
+        color: #cbd5e1;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .anomalies-section {
+        margin-bottom: 16px;
+    }
+
+    .anomalies-section h4 {
+        margin: 0 0 12px 0;
+        color: #e2e8f0;
+        font-size: 14px;
+    }
+
+    .anomalies-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .anomaly-item {
+        padding: 10px 12px;
+        background: #1e293b;
+        border-left: 3px solid #ef4444;
+        border-radius: 4px;
+        color: #cbd5e1;
+        font-size: 13px;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .btn-primary {
+        flex: 1;
+        padding: 10px 16px;
+        background: #059669;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background: #047857;
+    }
+
+    .tips-section {
+        margin-top: 24px;
+    }
+
+    .tips-section h4 {
+        margin: 0 0 16px 0;
+        color: #e2e8f0;
+        font-size: 14px;
+    }
+
+    .tips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+    }
+
+    .tip {
+        background: rgba(5, 150, 105, 0.1);
+        border: 1px solid #059669;
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+    }
+
+    .tip-icon {
+        font-size: 24px;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .tip strong {
+        display: block;
+        color: #059669;
+        font-size: 13px;
+        margin-bottom: 6px;
+    }
+
+    .tip p {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+</style>
 
 @code {
-    // TODO: Screenshot upload via Blazor InputFile
-    // TODO: Groq Vision analyzes for fake logo indicators, missing HTTPS, UI anomalies
+    [Inject]
+    private GroqVisionService? VisionService { get; set; }
+
+    private VisionAnalysisResult? visionResult;
+    private bool isAnalyzing = false;
+    private bool isDragging = false;
+    private string errorMessage = "";
+    private string? uploadedFileName;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        await ProcessFile(e.File);
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        isDragging = false;
+        // Drag-drop functionality would require JavaScript interop
+        // Users can click to select files instead
+    }
+
+    private void HandleDragOver(DragEventArgs e)
+    {
+        isDragging = true;
+    }
+
+    private void HandleDragLeave(DragEventArgs e)
+    {
+        isDragging = false;
+    }
+
+    private async Task ProcessFile(IBrowserFile file)
+    {
+        try
+        {
+            if (file.Size > 5 * 1024 * 1024) // 5MB limit
+            {
+                errorMessage = "File size must be less than 5MB";
+                return;
+            }
+
+            uploadedFileName = file.Name;
+            errorMessage = "";
+            isAnalyzing = true;
+            visionResult = null;
+
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream().ReadAsync(buffer);
+            var base64 = Convert.ToBase64String(buffer);
+
+            if (VisionService != null)
+            {
+                visionResult = await VisionService.AnalyzeImageAsync(base64);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error processing file: {ex.Message}";
+            uploadedFileName = null;
+        }
+        finally
+        {
+            isAnalyzing = false;
+        }
+    }
+
+    private string GetRiskClass()
+    {
+        if (visionResult?.RiskScore >= 70) return "high";
+        if (visionResult?.RiskScore >= 40) return "medium";
+        return "low";
+    }
+
+    private string GetRiskLevel()
+    {
+        if (visionResult?.RiskScore >= 70) return "🔴 HIGH RISK";
+        if (visionResult?.RiskScore >= 40) return "🟠 MEDIUM RISK";
+        return "🟢 LOW RISK";
+    }
+
+    private void ResetUpload()
+    {
+        uploadedFileName = null;
+        visionResult = null;
+        errorMessage = "";
+    }
+
+    private void ClearResults()
+    {
+        visionResult = null;
+        uploadedFileName = null;
+    }
+
+    private void ReportPhishing()
+    {
+        // TODO: Implement phishing report functionality
+    }
 }

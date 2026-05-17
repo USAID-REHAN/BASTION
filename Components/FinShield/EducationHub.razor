@@ -1,7 +1,507 @@
-<!-- EducationHub.razor — 5 interactive lessons + quizzes + badge rewards -->
+<div class="education-hub">
+    <div class="hub-container">
+        <div class="hub-header">
+            <h2>🎓 Financial Security Education</h2>
+            <p>Learn about common fraud tactics and how to protect yourself</p>
+        </div>
+
+        <div class="modules-grid">
+            <div class="module-card" @onclick="@(() => SelectModule("phishing"))">
+                <div class="module-icon">🎣</div>
+                <h3>Phishing Attacks</h3>
+                <p>Learn to identify and avoid phishing attempts</p>
+                <span class="arrow">→</span>
+            </div>
+            <div class="module-card" @onclick="@(() => SelectModule("investment"))">
+                <div class="module-icon">📈</div>
+                <h3>Investment Fraud</h3>
+                <p>Recognize investment scams and ponzi schemes</p>
+                <span class="arrow">→</span>
+            </div>
+            <div class="module-card" @onclick="@(() => SelectModule("passwords"))">
+                <div class="module-icon">🔑</div>
+                <h3>Password Security</h3>
+                <p>Create strong passwords and protect accounts</p>
+                <span class="arrow">→</span>
+            </div>
+            <div class="module-card" @onclick="@(() => SelectModule("2fa"))">
+                <div class="module-icon">🔐</div>
+                <h3>Two-Factor Auth</h3>
+                <p>Enable 2FA for extra account protection</p>
+                <span class="arrow">→</span>
+            </div>
+            <div class="module-card" @onclick="@(() => SelectModule("social"))">
+                <div class="module-icon">👤</div>
+                <h3>Social Engineering</h3>
+                <p>Understand social engineering tactics</p>
+                <span class="arrow">→</span>
+            </div>
+            <div class="module-card" @onclick="@(() => SelectModule("recovery"))">
+                <div class="module-icon">🆘</div>
+                <h3>Account Recovery</h3>
+                <p>Steps to take if your account is compromised</p>
+                <span class="arrow">→</span>
+            </div>
+        </div>
+
+        @if (selectedModule != null)
+        {
+            <div class="module-details">
+                <button class="close-btn" @onclick="@(() => SelectModule(null))">✕</button>
+                <h2>@GetModuleTitle()</h2>
+                <div class="module-content">
+                    @((MarkupString)GetModuleContent())
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .education-hub {
+        padding: 20px;
+    }
+
+    .hub-container {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 24px;
+    }
+
+    .hub-header {
+        margin-bottom: 32px;
+        text-align: center;
+    }
+
+    .hub-header h2 {
+        margin: 0 0 8px 0;
+        font-size: 24px;
+        color: #e2e8f0;
+    }
+
+    .hub-header p {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .modules-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+
+    .module-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .module-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(5, 150, 105, 0.1);
+        transition: left 0.3s ease;
+        z-index: -1;
+    }
+
+    .module-card:hover::before {
+        left: 0;
+    }
+
+    .module-card:hover {
+        border-color: #059669;
+        transform: translateY(-4px);
+    }
+
+    .module-icon {
+        font-size: 32px;
+        margin-bottom: 12px;
+    }
+
+    .module-card h3 {
+        margin: 0 0 8px 0;
+        color: #e2e8f0;
+        font-size: 16px;
+    }
+
+    .module-card p {
+        margin: 0;
+        color: #94a3b8;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+
+    .arrow {
+        display: inline-block;
+        color: #059669;
+        margin-top: 12px;
+        font-weight: 600;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    .module-card:hover .arrow {
+        opacity: 1;
+        transform: translateX(4px);
+    }
+
+    .module-details {
+        background: rgba(5, 150, 105, 0.1);
+        border: 2px solid #059669;
+        border-radius: 12px;
+        padding: 24px;
+        position: relative;
+        animation: slideIn 0.3s ease;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .close-btn:hover {
+        background: rgba(5, 150, 105, 0.2);
+        color: #059669;
+    }
+
+    .module-details h2 {
+        margin: 0 0 20px 0;
+        color: #059669;
+        font-size: 22px;
+    }
+
+    .module-content {
+        color: #cbd5e1;
+        line-height: 1.8;
+    }
+
+    .module-content h3 {
+        color: #059669;
+        margin: 20px 0 12px 0;
+        font-size: 16px;
+    }
+
+    .module-content h4 {
+        color: #e2e8f0;
+        margin: 16px 0 8px 0;
+        font-size: 14px;
+    }
+
+    .module-content ul, .module-content ol {
+        margin: 12px 0;
+        padding-left: 24px;
+    }
+
+    .module-content li {
+        margin: 8px 0;
+    }
+
+    .module-content strong {
+        color: #059669;
+    }
+
+    .module-content code {
+        background: #0f172a;
+        padding: 2px 6px;
+        border-radius: 3px;
+        color: #86efac;
+        font-family: monospace;
+    }
+
+    .tip-box {
+        background: rgba(5, 150, 105, 0.15);
+        border-left: 4px solid #059669;
+        padding: 12px;
+        margin: 16px 0;
+        border-radius: 4px;
+    }
+
+    .warning-box {
+        background: rgba(239, 68, 68, 0.15);
+        border-left: 4px solid #ef4444;
+        padding: 12px;
+        margin: 16px 0;
+        border-radius: 4px;
+        color: #fca5a5;
+    }
+</style>
 
 @code {
-    // TODO: 5 interactive lessons: JazzCash scams, fake HBL portals, OLX safety, crypto fraud, freelancing payments
-    // TODO: 3-question quiz per lesson
-    // TODO: Badge reward on completion
+    private string? selectedModule;
+
+    private void SelectModule(string? module)
+    {
+        selectedModule = module;
+    }
+
+    private string GetModuleTitle()
+    {
+        return selectedModule switch
+        {
+            "phishing" => "🎣 Phishing Attacks",
+            "investment" => "📈 Investment Fraud",
+            "passwords" => "🔑 Password Security",
+            "2fa" => "🔐 Two-Factor Authentication",
+            "social" => "👤 Social Engineering",
+            "recovery" => "🆘 Account Recovery",
+            _ => ""
+        };
+    }
+
+    private string GetModuleContent()
+    {
+        return selectedModule switch
+        {
+            "phishing" => @"
+<h3>What is Phishing?</h3>
+<p>Phishing is a cyber attack where criminals try to trick you into revealing sensitive information like passwords, credit card numbers, or personal data by posing as a legitimate organization.</p>
+
+<h4>Common Phishing Tactics:</h4>
+<ul>
+<li><strong>Email Phishing:</strong> Fake emails claiming urgent action is needed</li>
+<li><strong>Spear Phishing:</strong> Personalized attacks targeting specific individuals</li>
+<li><strong>Clone Phishing:</strong> Replicas of legitimate emails with malicious links</li>
+<li><strong>Whaling:</strong> Phishing attacks targeting high-value targets (executives)</li>
+</ul>
+
+<h4>How to Identify Phishing Emails:</h4>
+<ul>
+<li>Check sender's email address carefully (phishers often use similar but fake addresses)</li>
+<li>Look for generic greetings like 'Dear Customer' instead of your name</li>
+<li>Hover over links to see the actual URL before clicking</li>
+<li>Watch for urgent language or threats ('Your account will be closed!')</li>
+<li>Look for grammatical errors or unusual formatting</li>
+<li>Be suspicious of requests for personal information via email</li>
+</ul>
+
+<div class='tip-box'>
+💡 <strong>Pro Tip:</strong> Legitimate companies will NEVER ask for passwords or sensitive information via email.
+</div>
+
+<h4>What to Do if You Receive a Phishing Email:</h4>
+<ol>
+<li>Do NOT click any links or download attachments</li>
+<li>Do NOT reply with personal information</li>
+<li>Report the email as phishing to the company's real support team</li>
+<li>Delete the email after reporting</li>
+<li>Mark it as spam in your email client</li>
+</ol>
+",
+            "investment" => @"
+<h3>Investment Fraud Schemes</h3>
+<p>Investment scams promise unrealistic returns and target people wanting to grow their wealth.</p>
+
+<h4>Common Investment Scams:</h4>
+<ul>
+<li><strong>Ponzi Schemes:</strong> Early investors are paid with money from new investors</li>
+<li><strong>Pump & Dump:</strong> Artificially inflate stock prices then sell at profit</li>
+<li><strong>Cryptocurrency Scams:</strong> Promises of easy crypto wealth</li>
+<li><strong>Forex Trading:</strong> 'Guaranteed' returns from foreign exchange</li>
+</ul>
+
+<h4>Red Flags to Watch:</h4>
+<ul>
+<li>Promises of guaranteed returns or unusually high profits (>20% annually)</li>
+<li>Pressure to invest quickly without doing research</li>
+<li>Difficulty withdrawing funds or unclear processes</li>
+<li>Unsolicited investment opportunities</li>
+<li>Requests to recruit other investors</li>
+<li>Unclear or complex investment structures</li>
+</ul>
+
+<div class='warning-box'>
+⚠️ <strong>Important:</strong> If an investment sounds too good to be true, it probably is.
+</div>
+
+<h4>Legitimate Investment Advice:</h4>
+<ol>
+<li>Use licensed and regulated financial advisors</li>
+<li>Diversify your investments</li>
+<li>Understand what you're investing in</li>
+<li>Check the advisor's credentials with regulatory authorities</li>
+<li>Be wary of any unsolicited investment offers</li>
+</ol>
+",
+            "passwords" => @"
+<h3>Creating Strong Passwords</h3>
+<p>Your password is the first line of defense against unauthorized access to your accounts.</p>
+
+<h4>Password Best Practices:</h4>
+<ul>
+<li><strong>Length:</strong> Use at least 12-16 characters</li>
+<li><strong>Complexity:</strong> Mix uppercase, lowercase, numbers, and symbols</li>
+<li><strong>Uniqueness:</strong> Never reuse passwords across different accounts</li>
+<li><strong>Avoid:</strong> Don't use personal information, dictionary words, or sequential patterns</li>
+</ul>
+
+<h4>Password Do's and Don'ts:</h4>
+<div class='tip-box'>
+✓ DO use passphrases: 'BlueMoon$Coffee2024!'<br/>
+✓ DO update passwords regularly<br/>
+✓ DO use a password manager<br/>
+✗ DON'T share passwords with anyone<br/>
+✗ DON'T write passwords down or leave them visible<br/>
+✗ DON'T use the same password everywhere
+</div>
+
+<h4>Using a Password Manager:</h4>
+<p>Password managers like Bitwarden, 1Password, or LastPass can:</p>
+<ul>
+<li>Generate strong, random passwords</li>
+<li>Store passwords securely encrypted</li>
+<li>Auto-fill login credentials</li>
+<li>Sync across devices</li>
+<li>Alert you to weak or reused passwords</li>
+</ul>
+",
+            "2fa" => @"
+<h3>Two-Factor Authentication (2FA)</h3>
+<p>2FA adds an extra layer of security by requiring a second form of verification beyond your password.</p>
+
+<h4>Types of 2FA:</h4>
+<ul>
+<li><strong>Authenticator Apps:</strong> TOTP codes (Google Authenticator, Authy)</li>
+<li><strong>SMS Codes:</strong> One-time codes sent via text (less secure)</li>
+<li><strong>Backup Codes:</strong> One-time codes for account recovery</li>
+<li><strong>Security Keys:</strong> Physical USB keys (most secure)</li>
+<li><strong>Biometric:</strong> Fingerprint or face recognition</li>
+</ul>
+
+<h4>How to Enable 2FA:</h4>
+<ol>
+<li>Go to your account security settings</li>
+<li>Look for 'Two-Factor Authentication' or '2FA' option</li>
+<li>Choose your preferred method (authenticator app recommended)</li>
+<li>Scan the QR code or enter the setup key</li>
+<li>Save backup codes in a safe location</li>
+<li>Confirm by entering a code from your authenticator</li>
+</ol>
+
+<div class='tip-box'>
+💡 <strong>Recommendation:</strong> Use authenticator apps instead of SMS for better security.
+</div>
+
+<h4>Important Reminders:</h4>
+<ul>
+<li>Back up your 2FA setup codes in a safe place</li>
+<li>Don't share your 2FA codes with anyone</li>
+<li>Enable 2FA on important accounts (email, bank, social media)</li>
+<li>Use security keys for maximum protection</li>
+</ul>
+",
+            "social" => @"
+<h3>Social Engineering Attacks</h3>
+<p>Social engineering exploits human psychology to manipulate people into divulging confidential information.</p>
+
+<h4>Common Social Engineering Tactics:</h4>
+<ul>
+<li><strong>Pretexting:</strong> Creating a false scenario to gain trust</li>
+<li><strong>Baiting:</strong> Offering something enticing to trigger action</li>
+<li><strong>Tailgating:</strong> Physically following someone into restricted areas</li>
+<li><strong>Phishing:</strong> Deceptive communications requesting information</li>
+<li><strong>Quid Pro Quo:</strong> Offering service or benefit in exchange for information</li>
+</ul>
+
+<h4>Real-World Examples:</h4>
+<ul>
+<li>Tech support scam: 'Hi, this is from Microsoft. Your computer has a virus.'</li>
+<li>Prize scam: 'Congratulations! You've won a prize. Verify your info to claim.'</li>
+<li>Authority impersonation: Impersonating police or government officials</li>
+<li>Urgency tactics: 'Act now or your account will be closed!'</li>
+</ul>
+
+<h4>Protection Strategies:</h4>
+<ul>
+<li>Verify requests through official channels before responding</li>
+<li>Never give personal information to unsolicited callers</li>
+<li>Be skeptical of unsolicited offers or requests</li>
+<li>Implement policies against sharing sensitive information</li>
+<li>Train yourself and others to recognize social engineering</li>
+</ul>
+",
+            "recovery" => @"
+<h3>Account Recovery Steps</h3>
+<p>If your account has been compromised, take immediate action to regain control and prevent further damage.</p>
+
+<h4>Immediate Actions (First 24 Hours):</h4>
+<ol>
+<li><strong>Change your password:</strong> Use a different device if possible</li>
+<li><strong>Enable 2FA:</strong> Add an extra layer of security</li>
+<li><strong>Review account activity:</strong> Check login history and recent actions</li>
+<li><strong>Revoke sessions:</strong> Log out all other active sessions</li>
+<li><strong>Check recovery options:</strong> Update email and phone number</li>
+</ol>
+
+<h4>For Bank/Financial Accounts:</h4>
+<ul>
+<li>Call your bank immediately</li>
+<li>Monitor for unauthorized transactions</li>
+<li>Place a fraud alert on credit reports</li>
+<li>Consider a credit freeze</li>
+<li>Check credit reports from all three bureaus</li>
+</ul>
+
+<h4>Following Up (Days 2-30):</h4>
+<ul>
+<li>Change passwords on all related accounts</li>
+<li>Review connected devices and apps</li>
+<li>Enable security features (recovery codes, backup email)</li>
+<li>Monitor account for unusual activity</li>
+<li>Check for identity theft</li>
+</ul>
+
+<div class='warning-box'>
+⚠️ <strong>Document Everything:</strong> Keep records of all actions taken for potential dispute resolution.
+</div>
+
+<h4>Prevention for the Future:</h4>
+<ul>
+<li>Use strong, unique passwords</li>
+<li>Enable 2FA on all important accounts</li>
+<li>Keep software and devices updated</li>
+<li>Be cautious with phishing attempts</li>
+<li>Regularly review account activity</li>
+</ul>
+",
+            _ => ""
+        };
+    }
 }
