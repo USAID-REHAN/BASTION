@@ -81,9 +81,9 @@
 
 /* ── Light Mode Overrides ── */
 .bastion-light {
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(0, 0, 0, 0.06);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+    --glass-bg: #FFFFFF; /* Solid white for cards to contrast against background */
+    --glass-border: rgba(0, 0, 0, 0.15); /* Stronger border for visibility */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
 }

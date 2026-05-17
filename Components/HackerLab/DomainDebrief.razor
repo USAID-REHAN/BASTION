@@ -1,6 +1,18 @@
-<!-- DomainDebrief.razor — Post-game — XP award, badge display, real-world action checklist -->
+<div class="hacker-panel text-center">
+    <div class="cyber-card-title justify-content-center"><i class="bi bi-flag"></i> Mission Accomplished</div>
+    <h2 style="color: var(--success);">+@XpEarned XP</h2>
+    @if (!string.IsNullOrEmpty(BadgeEarned))
+    {
+        <h4 style="color: var(--hacker-primary);" class="my-3"><i class="bi bi-shield-fill"></i> Badge Unlocked: @BadgeEarned</h4>
+    }
+    <div class="my-4">
+        <button class="btn-cyber" style="background: linear-gradient(135deg, #7C3AED, #6D28D9);" @onclick="OnReturn">Return to Academy</button>
+    </div>
+</div>
 
 @code {
-    // TODO: Post-game debrief with XP award, badge display
-    // TODO: Real-world action checklist for the player
+    [Parameter] public int DomainId { get; set; }
+    [Parameter] public int XpEarned { get; set; }
+    [Parameter] public string BadgeEarned { get; set; } = "";
+    [Parameter] public EventCallback OnReturn { get; set; }
 }

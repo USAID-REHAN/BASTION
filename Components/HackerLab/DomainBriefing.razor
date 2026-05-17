@@ -1,5 +1,118 @@
-<!-- DomainBriefing.razor — Pre-game mission briefing — 5 security tips per domain -->
+<div class="hl-briefing-container">
+    <div class="hl-briefing-box">
+        <i class="bi @GetIcon() hl-briefing-bg-icon"></i>
+        
+        <button class="hl-briefing-close" @onclick="OnBack">Close Terminal</button>
+
+        @if (_step == 1)
+        {
+            <div class="hl-briefing-header">
+                <div class="hl-briefing-icon"><i class="bi @GetIcon()"></i></div>
+                <div class="hl-briefing-title-area">
+                    <h4>MODULE TRAINING</h4>
+                    <h2>@GetTitle()</h2>
+                </div>
+            </div>
+
+            <p class="hl-briefing-desc">@GetDesc()</p>
+
+            <div class="hl-reward-row">
+                <div class="hl-reward-box">
+                    <div class="hl-reward-label">REWARDS UPON COMPLETION</div>
+                    <div class="hl-reward-value hl-reward-xp"><i class="bi bi-graph-up-arrow"></i> 500 XP</div>
+                </div>
+                <div class="hl-reward-box">
+                    <div class="hl-reward-label">COLLECTIBLE ARTIFACT</div>
+                    <div class="hl-reward-value hl-reward-artifact"><i class="bi bi-award"></i> @GetArtifact()</div>
+                </div>
+            </div>
+
+            <div class="hl-status-banner">
+                <div class="hl-status-left"><i class="bi bi-star-fill"></i> Interactive Drill Readied</div>
+                <div class="hl-status-right">LIVE SIMULATION</div>
+            </div>
+
+            <button class="hl-btn-initiate" @onclick="NextStep">Initialize Module Drill</button>
+        }
+        else if (_step == 2)
+        {
+            <div class="hl-init-header">
+                <div class="hl-init-play-icon"><i class="bi bi-play-circle-fill"></i></div>
+                <h2 class="hl-init-title">Level Initiation</h2>
+                <h4 class="hl-init-subtitle">DRILL: @GetTitle().ToUpper()</h4>
+            </div>
+
+            <div class="hl-instruction-box">
+                <div class="hl-instruction-icon"><i class="bi bi-exclamation-circle"></i></div>
+                <p class="hl-instruction-text">@GetInstruction()</p>
+                <div class="hl-instruction-req"><i class="bi bi-bullseye"></i> REQUIREMENT: 6/10 SUCCESSES</div>
+            </div>
+
+            <button class="hl-btn-sandbox" @onclick="OnStart">ENTER SANDBOX</button>
+            <button class="hl-btn-abort" @onclick="OnBack">ABORT MISSION</button>
+        }
+    </div>
+</div>
 
 @code {
-    // TODO: Display domain-specific briefing with 5 security tips before game starts
+    [Parameter] public int DomainId { get; set; }
+    [Parameter] public EventCallback OnStart { get; set; }
+    [Parameter] public EventCallback OnBack { get; set; }
+
+    private int _step = 1;
+
+    protected override void OnParametersSet()
+    {
+        _step = 1;
+    }
+
+    private void NextStep()
+    {
+        _step = 2;
+    }
+
+    private string GetIcon() => DomainId switch {
+        1 => "bi-fingerprint",
+        2 => "bi-wifi",
+        3 => "bi-envelope",
+        4 => "bi-lock",
+        5 => "bi-bug",
+        _ => "bi-shield"
+    };
+
+    private string GetTitle() => DomainId switch {
+        1 => "Password & Auth Security",
+        2 => "Network & WiFi Safety",
+        3 => "Social Engineering",
+        4 => "Data Privacy",
+        5 => "Malware Defense",
+        _ => "Unknown"
+    };
+
+    private string GetDesc() => DomainId switch {
+        1 => "Master the art of creating unhackable identities.",
+        2 => "Navigate the dangers of public and rogue networks.",
+        3 => "Learn to identify psychological manipulation and phishing.",
+        4 => "Protect personal information from being harvested or leaked.",
+        5 => "Identify and quarantine malicious software before it spreads.",
+        _ => ""
+    };
+
+    private string GetArtifact() => DomainId switch {
+        1 => "Cipher Breaker",
+        2 => "Network Nomad",
+        3 => "Truth Seeker",
+        4 => "Privacy Phantom",
+        5 => "Virus Vanquisher",
+        _ => ""
+    };
+
+    private string GetInstruction() => DomainId switch {
+        1 => "Click the \"Complexity\" buttons to strengthen your base password. Reach 100% strength using Symbols, Numbers, and Case before committing the hash.",
+        2 => "Analyze incoming network packets. Identify and block packets originating from suspicious IPs or unencrypted HTTP sources.",
+        3 => "Review emails and messages. Identify phishing attempts by looking at sender addresses, urgent language, and suspicious links.",
+        4 => "Review data sharing requests. Deny access to sensitive personal information that apps do not need to function.",
+        5 => "Monitor active processes. Quarantine executable files that exhibit ransomware or keylogger-like behaviors.",
+        _ => ""
+    };
 }

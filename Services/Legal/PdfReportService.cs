@@ -41,6 +41,110 @@ public class PdfReportService
         return stream.ToArray();
     }
 
+    /// <summary>
+    /// Generate a PDF from a Smart Legal Draft.
+    /// </summary>
+    public byte[] GenerateDraftPdf(string draftContent)
+    {
+        var document = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(2, Unit.Centimetre);
+                page.DefaultTextStyle(x => x.FontSize(11).FontColor(Colors.Black));
+
+                page.Header().PaddingBottom(15).Row(row =>
+                {
+                    row.RelativeItem().Column(c =>
+                    {
+                        c.Item().Text("BASTION — Smart Legal Draft").FontSize(16).Bold().FontColor(Colors.Amber.Darken2);
+                        c.Item().Text("AI-Generated Document").FontSize(9).FontColor(Colors.Grey.Medium);
+                    });
+                    row.ConstantItem(120).AlignRight().Text($"{DateTime.UtcNow:MMM dd, yyyy}").FontSize(10).FontColor(Colors.Grey.Medium);
+                });
+
+                page.Content().Element(c => RenderMarkdownToQuestPdf(c, draftContent));
+
+                page.Footer().Element(ComposeFooter);
+            });
+        });
+
+        using var stream = new MemoryStream();
+        document.GeneratePdf(stream);
+        return stream.ToArray();
+    }
+
+    private void RenderMarkdownToQuestPdf(IContainer container, string markdown)
+    {
+        container.Column(col =>
+        {
+            var lines = markdown.Split('\n');
+            foreach (var line in lines)
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrEmpty(trimmed))
+                {
+                    col.Item().Height(8);
+                    continue;
+                }
+
+                if (trimmed.StartsWith("### "))
+                {
+                    col.Item().PaddingTop(8).PaddingBottom(4).Text(t => RenderInlineMarkdown(t, trimmed[4..], s => s.FontSize(13).Bold().FontColor(Colors.Amber.Darken3)));
+                }
+                else if (trimmed.StartsWith("## "))
+                {
+                    col.Item().PaddingTop(10).PaddingBottom(6).Text(t => RenderInlineMarkdown(t, trimmed[3..], s => s.FontSize(15).Bold().FontColor(Colors.Amber.Darken3)));
+                }
+                else if (trimmed.StartsWith("# "))
+                {
+                    col.Item().PaddingTop(12).PaddingBottom(8).Text(t => RenderInlineMarkdown(t, trimmed[2..], s => s.FontSize(18).Bold().FontColor(Colors.Amber.Darken3)));
+                }
+                else if (trimmed.StartsWith("#### "))
+                {
+                    col.Item().PaddingTop(6).PaddingBottom(2).Text(t => RenderInlineMarkdown(t, trimmed[5..], s => s.FontSize(11).Bold().FontColor(Colors.Grey.Darken3)));
+                }
+                else if (trimmed.StartsWith("- ") || trimmed.StartsWith("* "))
+                {
+                    col.Item().PaddingBottom(4).PaddingLeft(10).Row(row =>
+                    {
+                        row.ConstantItem(15).Text("•").FontSize(11).FontColor(Colors.Grey.Medium);
+                        row.RelativeItem().Text(t => RenderInlineMarkdown(t, trimmed[2..], s => s.FontSize(11)));
+                    });
+                }
+                else
+                {
+                    col.Item().PaddingBottom(4).Text(t => RenderInlineMarkdown(t, trimmed, s => s.FontSize(11)));
+                }
+            }
+        });
+    }
+
+    private void RenderInlineMarkdown(TextDescriptor descriptor, string text, Action<TextSpanDescriptor> styleModifier)
+    {
+        // Handle inline bold (**text**)
+        var parts = text.Split("**");
+        for (int i = 0; i < parts.Length; i++)
+        {
+            TextSpanDescriptor span;
+            if (i % 2 == 1 && i < parts.Length - 1)
+            {
+                span = descriptor.Span(parts[i]).Bold();
+            }
+            else if (i % 2 == 1 && i == parts.Length - 1)
+            {
+                span = descriptor.Span("**" + parts[i]);
+            }
+            else
+            {
+                span = descriptor.Span(parts[i]);
+            }
+            
+            styleModifier?.Invoke(span);
+        }
+    }
+
     private void ComposeHeader(IContainer container, string documentName, DateTime analyzedAt)
     {
         container.Column(col =>

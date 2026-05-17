@@ -1,9 +1,99 @@
-<!-- FraudFeed.razor — Domain 3: Social Engineering -->
-<!-- Classify scrolling messages SCAM/SAFE in 3 seconds each -->
+@implements IDisposable
+
+<div class="hacker-hud">
+    <div class="hacker-stat">
+        <span class="hacker-stat-label">Time Remaining</span>
+        <span class="hacker-stat-value @(_timeLeft <= 10 ? "text-danger" : "")">@_timeLeft.ToString("D2")s</span>
+    </div>
+    <div class="hacker-stat text-end">
+        <span class="hacker-stat-label">Messages Classified</span>
+        <span class="hacker-stat-value text-success">@_score</span>
+    </div>
+</div>
+
+<div class="hacker-timer-container">
+    <div class="hacker-timer-fill @(_timeLeft <= 10 ? "danger" : "")" style="width: @((_timeLeft / 60.0) * 100)%"></div>
+</div>
+
+<div class="text-center py-4">
+    <h5 class="text-muted mb-4">CLASSIFY THE MESSAGE:</h5>
+    
+    <div class="p-4 rounded my-4 mx-auto" style="background: rgba(0,0,0,0.4); border: 1px solid var(--hacker-border); max-width: 500px; min-height: 120px; font-size: 1.1rem; color: #e5e7eb; display: flex; align-items: center; justify-content: center;">
+        <i class="bi bi-chat-dots text-muted me-3 fs-3"></i>
+        <span>"@_currentMessage.Text"</span>
+    </div>
+    
+    <div class="d-flex justify-content-center gap-4">
+        <button class="btn btn-lg btn-success px-5" style="border-radius: 8px;" @onclick="() => CheckMessage(false)" disabled="@_isGameOver"><i class="bi bi-shield-check"></i> SAFE</button>
+        <button class="btn btn-lg btn-danger px-5" style="border-radius: 8px;" @onclick="() => CheckMessage(true)" disabled="@_isGameOver"><i class="bi bi-exclamation-triangle"></i> SCAM</button>
+    </div>
+</div>
 
 @code {
-    // TODO: Scrolling message feed — classify SCAM or SAFE within 3 seconds
-    // Brief: urgency/authority/fear formula, OTP scams
-    // Badge: Phish Slayer
-    // Cross-link → Message Analyzer
+    [Parameter] public EventCallback<GameResult> OnComplete { get; set; }
+    
+    private int _timeLeft = 60;
+    private int _score = 0;
+    private bool _isGameOver = false;
+    private System.Timers.Timer? _timer;
+    private Random _rand = new Random();
+    
+    private MessageItem _currentMessage = new();
+    
+    private List<MessageItem> _messages = new() {
+        new MessageItem { Text = "URGENT: Your account will be locked in 5 minutes. Click here: bit.ly/123", IsScam = true },
+        new MessageItem { Text = "Hey, it's mom. My phone broke, text me on this new number.", IsScam = true },
+        new MessageItem { Text = "Your OTP is 492011. Do not share this with anyone.", IsScam = false },
+        new MessageItem { Text = "Meeting at 3 PM in conference room B. See you there.", IsScam = false },
+        new MessageItem { Text = "Congratulations! You've won an iPhone 15. Claim here: free-apple-gifts.xyz", IsScam = true },
+        new MessageItem { Text = "Your Amazon order #402-991 has shipped. Track here: amazon.com/track", IsScam = false },
+        new MessageItem { Text = "Bank Alert: Suspicious login attempt. Verify identity: my-secure-bank.io", IsScam = true }
+    };
+
+    protected override void OnInitialized()
+    {
+        NextMessage();
+        
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += async (s, e) => {
+            _timeLeft--;
+            if (_timeLeft <= 0) {
+                _isGameOver = true;
+                _timer.Stop();
+                await InvokeAsync(() => OnComplete.InvokeAsync(new GameResult { 
+                    Xp = _score * 8, 
+                    Badge = _score >= 10 ? "Phish Slayer" : "" 
+                }));
+            }
+            await InvokeAsync(StateHasChanged);
+        };
+        _timer.Start();
+    }
+    
+    private void NextMessage()
+    {
+        _currentMessage = _messages[_rand.Next(_messages.Count)];
+    }
+
+    private void CheckMessage(bool selectedScam)
+    {
+        if (_isGameOver) return;
+        
+        if (selectedScam == _currentMessage.IsScam)
+            _score++;
+        else
+            _score = Math.Max(0, _score - 1);
+            
+        NextMessage();
+    }
+    
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+    
+    class MessageItem {
+        public string Text { get; set; } = "";
+        public bool IsScam { get; set; }
+    }
 }

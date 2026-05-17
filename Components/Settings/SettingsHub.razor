@@ -6,6 +6,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
+
 <PageTitle>BASTION — Settings</PageTitle>
 
 <div class="settings-page">
@@ -16,13 +17,13 @@
 
     <!-- Tabs -->
     <div class="settings-tabs">
-        <button class="settings-tab @(_activeTab == "theme" ? "active" : "")" @onclick='() => _activeTab = "theme"'>
+        <button class="settings-tab @(_activeTab == "theme" ? "active" : "")" @onclick='() => SetTab("theme")'>
             <i class="bi bi-palette"></i> Theme
         </button>
-        <button class="settings-tab @(_activeTab == "sound" ? "active" : "")" @onclick='() => _activeTab = "sound"'>
+        <button class="settings-tab @(_activeTab == "sound" ? "active" : "")" @onclick='() => SetTab("sound")'>
             <i class="bi bi-volume-up"></i> Sound
         </button>
-        <button class="settings-tab @(_activeTab == "account" ? "active" : "")" @onclick='() => _activeTab = "account"'>
+        <button class="settings-tab @(_activeTab == "account" ? "active" : "")" @onclick='() => SetTab("account")'>
             <i class="bi bi-person"></i> Account
         </button>
     </div>
@@ -48,67 +49,6 @@
                 </div>
             </div>
 
-            <!-- Color Picker -->
-            <div class="settings-card">
-                <div class="settings-card-title">Accent Colour</div>
-                <div class="settings-card-desc">
-                    @if (ThemeService.IsDarkMode)
-                    {
-                        <span>Colour is saved but only applied in <strong>Light Mode</strong></span>
-                    }
-                    else
-                    {
-                        <span>Pick a colour to personalise your interface</span>
-                    }
-                </div>
-
-                <div class="color-picker-area">
-                    <!-- Native Color Picker -->
-                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
-                        <input type="color" @bind="_stagedColor" @bind:event="oninput"
-                               style="width: 160px; height: 160px; border: 3px solid var(--glass-border); border-radius: 16px; cursor: pointer; padding: 4px;" />
-                        <span style="font-size: 0.8rem; color: var(--text-muted);">Click the wheel to pick a custom colour</span>
-                    </div>
-
-                    <!-- 8 Preset Swatches -->
-                    <div class="color-presets">
-                        @foreach (var swatch in _presetColors)
-                        {
-                            <div class="color-swatch @(_stagedColor.Equals(swatch, StringComparison.OrdinalIgnoreCase) ? "active" : "")"
-                                 style="background: @swatch;"
-                                 @onclick="() => StageColor(swatch)"
-                                 title="@swatch">
-                            </div>
-                        }
-                    </div>
-
-                    <!-- Preview + Apply + Reset -->
-                    <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap;">
-                        <div class="current-color-preview" style="flex: 1; min-width: 150px;">
-                            <div class="current-color-dot" style="background: @_stagedColor;"></div>
-                            <span class="current-color-hex font-mono">@_stagedColor.ToUpper()</span>
-                            @if (!_stagedColor.Equals(ThemeService.AccentColor, StringComparison.OrdinalIgnoreCase))
-                            {
-                                <span class="badge-bastion badge-caution" style="margin-left: 8px;">Unsaved</span>
-                            }
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="btn-bastion btn-primary-bastion"
-                                    style="padding: 10px 20px; white-space: nowrap;"
-                                    @onclick="ApplyColor"
-                                    disabled="@_stagedColor.Equals(ThemeService.AccentColor, StringComparison.OrdinalIgnoreCase)">
-                                <i class="bi bi-check-lg"></i> Apply
-                            </button>
-                            <button class="btn-bastion btn-ghost-bastion"
-                                    style="padding: 10px 20px; white-space: nowrap;"
-                                    @onclick="ResetColor"
-                                    disabled="@ThemeService.AccentColor.Equals(DEFAULT_COLOR, StringComparison.OrdinalIgnoreCase)">
-                                <i class="bi bi-arrow-counterclockwise"></i> Reset
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     }
 
@@ -254,18 +194,6 @@
 @code {
     private string _activeTab = "theme";
 
-    // Default accent color
-    private const string DEFAULT_COLOR = "#1D4ED8";
-
-    // Color presets (8 swatches per proposal)
-    private readonly string[] _presetColors = {
-        "#1D4ED8", "#DC2626", "#059669", "#7C3AED",
-        "#0891B2", "#D97706", "#DB2777", "#475569"
-    };
-
-    // Staged color (preview before applying)
-    private string _stagedColor = DEFAULT_COLOR;
-
     // Password change
     private string? _currentPw;
     private string? _newPw;
@@ -273,31 +201,9 @@
     private string? _pwMessage;
     private bool _pwSuccess;
 
-    protected override void OnInitialized()
+    private async Task SetTab(string tab)
     {
-        _stagedColor = ThemeService.AccentColor;
-    }
-
-    private void StageColor(string hex)
-    {
-        _stagedColor = hex;
-    }
-
-    private async Task ApplyColor()
-    {
-        await ThemeService.SetAccentColor(_stagedColor);
-    }
-
-    private async Task ResetColor()
-    {
-        _stagedColor = DEFAULT_COLOR;
-        await ThemeService.SetAccentColor(DEFAULT_COLOR);
-    }
-
-    private async Task SelectColor(string hex)
-    {
-        _stagedColor = hex;
-        await ThemeService.SetAccentColor(hex);
+        _activeTab = tab;
     }
 
     private async Task ToggleDarkMode(ChangeEventArgs e)

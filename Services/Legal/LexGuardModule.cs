@@ -14,7 +14,7 @@ public class LexGuardModule : IModule
     public LexGuardModule(BastionDbContext db) => _db = db;
 
     public string Name => "LexGuard";
-    public string Icon => "📜";
+    public string Icon => "bi-file-earmark-text";
     public string RouteUrl => "/lexguard";
     public string Description => "Document protection — AI contract analysis, clause highlights, PDF export";
     public string PrimaryHex => "#D97706";

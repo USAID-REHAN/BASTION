@@ -8,7 +8,7 @@ namespace BASTION.Services.Security;
 public class CyberShieldModule : IModule
 {
     public string Name => "CyberShield";
-    public string Icon => "🛡️";
+    public string Icon => "bi-shield-check";
     public string RouteUrl => "/cybershield";
     public string Description => "Device protection — PowerShell audit, IP checker, password breach, chatbot";
     public string PrimaryHex => "#0891B2";

@@ -1,10 +1,321 @@
 @page "/hackerlab"
+@rendermode InteractiveServer
+@inject BASTION.Services.Auth.AuthService AuthService
+@inject NavigationManager Navigation
+@inject BASTION.Services.Gamification.XpService XpService
 
-<!-- HackerHub.razor — Academy overview — domain grid, XP bar, rank badge, leaderboard -->
+<PageTitle>BASTION — HackerLab</PageTitle>
 
-<h2>HackerLab — Security Training Academy</h2>
+<div class="hacker-hub module-hacker">
+    @if (_currentState == State.Hub)
+    {
+        <div class="hl-academy-container">
+            <!-- Header Section -->
+            <div class="hl-header-row">
+                <div class="hl-header-titles">
+                    <h1 class="hl-title">HackerLab Academy</h1>
+                    <p class="hl-subtitle">TRAIN YOUR MIND. STRENGTHEN YOUR PERIMETER.</p>
+                </div>
+                <div class="hl-header-stats">
+                    <div class="hl-stat-box">
+                        <div class="hl-stat-label">INTELLIGENCE XP</div>
+                        <div class="hl-stat-value text-primary-glow">@XpService.CurrentXp</div>
+                    </div>
+                    <div class="hl-stat-box">
+                        <div class="hl-stat-label">BADGES EARNED</div>
+                        <div class="hl-stat-value text-success-glow">@XpService.Badges.Count/5</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Domains Section -->
+            <div class="hl-domain-grid">
+                <div class="hl-domain-card" @onclick="() => SelectDomain(1)">
+                    <div class="hl-domain-bg-icon"><i class="bi bi-fingerprint"></i></div>
+                    <div class="hl-domain-top">
+                        <div class="hl-domain-icon"><i class="bi bi-fingerprint"></i></div>
+                        <div class="hl-domain-status"><i class="bi bi-shield-check"></i></div>
+                    </div>
+                    <div class="hl-domain-title">Password & Auth Security</div>
+                    <div class="hl-domain-subtitle">DOMAIN 01</div>
+                    <div class="hl-domain-footer">
+                        <span>Authorized</span>
+                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                    </div>
+                </div>
+
+                <div class="hl-domain-card" @onclick="() => SelectDomain(2)">
+                    <div class="hl-domain-bg-icon"><i class="bi bi-wifi"></i></div>
+                    <div class="hl-domain-top">
+                        <div class="hl-domain-icon"><i class="bi bi-wifi"></i></div>
+                        <div class="hl-domain-status"><i class="bi bi-shield-check"></i></div>
+                    </div>
+                    <div class="hl-domain-title">Network & WiFi Safety</div>
+                    <div class="hl-domain-subtitle">DOMAIN 02</div>
+                    <div class="hl-domain-footer">
+                        <span>Authorized</span>
+                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                    </div>
+                </div>
+
+                <div class="hl-domain-card" @onclick="() => SelectDomain(3)">
+                    <div class="hl-domain-bg-icon"><i class="bi bi-envelope"></i></div>
+                    <div class="hl-domain-top">
+                        <div class="hl-domain-icon"><i class="bi bi-envelope"></i></div>
+                        <div class="hl-domain-status"><i class="bi bi-shield-check"></i></div>
+                    </div>
+                    <div class="hl-domain-title">Social Engineering</div>
+                    <div class="hl-domain-subtitle">DOMAIN 03</div>
+                    <div class="hl-domain-footer">
+                        <span>Authorized</span>
+                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                    </div>
+                </div>
+
+                <div class="hl-domain-card" @onclick="() => SelectDomain(4)">
+                    <div class="hl-domain-bg-icon"><i class="bi bi-lock"></i></div>
+                    <div class="hl-domain-top">
+                        <div class="hl-domain-icon"><i class="bi bi-lock"></i></div>
+                        <div class="hl-domain-status"><i class="bi bi-shield-check"></i></div>
+                    </div>
+                    <div class="hl-domain-title">Data Privacy</div>
+                    <div class="hl-domain-subtitle">DOMAIN 04</div>
+                    <div class="hl-domain-footer">
+                        <span>Authorized</span>
+                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                    </div>
+                </div>
+
+                <div class="hl-domain-card" @onclick="() => SelectDomain(5)">
+                    <div class="hl-domain-bg-icon"><i class="bi bi-bug"></i></div>
+                    <div class="hl-domain-top">
+                        <div class="hl-domain-icon"><i class="bi bi-bug"></i></div>
+                        <div class="hl-domain-status"><i class="bi bi-shield-check"></i></div>
+                    </div>
+                    <div class="hl-domain-title">Malware Defense</div>
+                    <div class="hl-domain-subtitle">DOMAIN 05</div>
+                    <div class="hl-domain-footer">
+                        <span>Authorized</span>
+                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Section -->
+            <div class="hl-bottom-row">
+                <div class="hl-classroom">
+                    <h2 class="hl-section-title">Classroom Intelligence</h2>
+                    <div class="hl-classroom-grid">
+                        <div class="hl-class-card" @onclick='() => ShowKnowledge("Social Engineering")'>
+                            <div class="hl-class-icon"><i class="bi bi-shield-check"></i></div>
+                            <div class="hl-class-title">Social Engineering</div>
+                            <div class="hl-class-desc">Understand the formula: Urgency + Authority = Vulnerability.</div>
+                        </div>
+                        <div class="hl-class-card" @onclick='() => ShowKnowledge("Network Sniffing")'>
+                            <div class="hl-class-icon"><i class="bi bi-wifi"></i></div>
+                            <div class="hl-class-title">Network Sniffing</div>
+                            <div class="hl-class-desc">Learn how public WiFi exposes your unencrypted packets.</div>
+                            <div class="hl-class-link"><i class="bi bi-book"></i> STUDY TOPIC</div>
+                        </div>
+                        <div class="hl-class-card" @onclick='() => ShowKnowledge("Zero Day Detection")'>
+                            <div class="hl-class-icon"><i class="bi bi-bug"></i></div>
+                            <div class="hl-class-title">Zero Day Detection</div>
+                            <div class="hl-class-desc">How heuristics identify threats without a signature.</div>
+                        </div>
+                        <div class="hl-class-card" @onclick='() => ShowKnowledge("Physical Security")'>
+                            <div class="hl-class-icon"><i class="bi bi-fingerprint"></i></div>
+                            <div class="hl-class-title">Physical Security</div>
+                            <div class="hl-class-desc">Tailgating and social hacking in physical zones.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hl-guardian-path">
+                    <div class="hl-guardian-header">
+                        <div class="hl-guardian-trophy">
+                            <i class="bi bi-trophy"></i>
+                            <div class="hl-guardian-badge">CYBER GUARDIAN</div>
+                        </div>
+                        <h2>Guardian Path</h2>
+                        <p>Your journey towards full security enlightenment.</p>
+                    </div>
+                    
+                    <div class="hl-rank-list">
+                        @foreach (var rank in new[] { "CIVILIAN", "SCRIPT KIDDIE", "WHITE HAT ANALYST", "ETHICAL HACKER", "CYBER GUARDIAN" })
+                        {
+                            var isCurrent = XpService.CurrentRank.Equals(rank, StringComparison.OrdinalIgnoreCase) || rank == "CYBER GUARDIAN";
+                            <div class="hl-rank-item @(isCurrent ? "active" : "")">
+                                <span>@rank</span>
+                                @if (isCurrent)
+                                {
+                                    <i class="bi bi-check-circle"></i>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (_currentState == State.Briefing)
+    {
+        <DomainBriefing DomainId="_selectedDomain" OnStart="StartGame" OnBack="GoToHub" />
+    }
+    else if (_currentState == State.Playing)
+    {
+        <GameCanvas DomainId="_selectedDomain" OnComplete="GameCompleted" />
+    }
+    else if (_currentState == State.Debrief)
+    {
+        <DomainDebrief DomainId="_selectedDomain" XpEarned="_lastXp" BadgeEarned="_lastBadge" OnReturn="GoToHub" />
+    }
+
+    <!-- Knowledge Center Modal -->
+    @if (_showKnowledgeModal)
+    {
+        <div class="hl-modal-backdrop" @onclick="CloseKnowledge">
+            <div class="hl-modal" @onclick:stopPropagation>
+                <div class="hl-modal-header">
+                    <div class="hl-modal-title">
+                        <div class="hl-modal-icon"><i class="bi @GetKnowledgeIcon(_knowledgeTitle)"></i></div>
+                        <div>
+                            <div class="hl-modal-subtitle">KNOWLEDGE CENTER</div>
+                            <h2>@_knowledgeTitle</h2>
+                        </div>
+                    </div>
+                    <button class="hl-modal-close" @onclick="CloseKnowledge"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="hl-modal-body">
+                    @if (_knowledgeTitle == "Social Engineering")
+                    {
+                        <p>Social engineering is the art of manipulating people so they give up confidential information. The types of information criminals are seeking can vary, but when individuals are targeted the criminals are usually trying to trick you into giving them your passwords or bank information, or access your computer to secretly install malicious software.</p>
+                        <p>Common Tactics:</p>
+                        <ul>
+                            <li><strong>Urgency:</strong> "Your account will be suspended in 2 hours!"</li>
+                            <li><strong>Authority:</strong> "I'm calling from the CEO's office."</li>
+                            <li><strong>Fear:</strong> "A warrant has been issued for your arrest."</li>
+                            <li><strong>Curiosity:</strong> "You won't believe what your coworker said!"</li>
+                        </ul>
+                        <p>Detection Strategy:</p>
+                        <p>Always verify the identity of the requester through a different, trusted channel. If someone calls you from 'Your Bank', hang up and call the number on the back of your card.</p>
+                    }
+                    else if (_knowledgeTitle == "Network Sniffing")
+                    {
+                        <p>Network sniffing is a technique used to monitor and capture all data packets passing through a given network. Sniffers are used by network administrators to monitor and troubleshoot network traffic. However, they are also used by hackers to steal information.</p>
+                        <p>How it works:</p>
+                        <p>When you connect to an open, unencrypted WiFi network (like at a cafe), every piece of data you send—passwords, emails, session cookies—can be seen by anyone else on that same network using a 'Packet Sniffer'.</p>
+                        <p>Prevention:</p>
+                        <p><strong>Use a VPN:</strong> Encrypts your traffic from your device to the VPN server.</p>
+                        <p><strong>HTTPS Everywhere:</strong> Ensure websites you visit use encryption.</p>
+                        <p><strong>Forget Public Networks:</strong> Disable "Auto-Join" for open networks.</p>
+                    }
+                    else if (_knowledgeTitle == "Zero Day Detection")
+                    {
+                        <p>A zero-day vulnerability is a software security flaw that is known to the software vendor but has no patch in place to fix the flaw. It's called "zero-day" because the developer has had zero days to fix it.</p>
+                        <p>Heuristic Analysis:</p>
+                        <p>Since there is no "signature" (known fingerprint) for a zero-day attack, security systems use heuristics. Instead of looking for a specific virus name, they look for <em>suspicious behavior</em>:</p>
+                        <ul>
+                            <li>A calculator app trying to access your contacts.</li>
+                            <li>A word document trying to run a PowerShell script.</li>
+                            <li>Sudden bulk encryption of files (Ransomware behavior).</li>
+                        </ul>
+                        <p>Protection:</p>
+                        <p>Keep your OS and software updated. Even though zero-days exist, most attacks exploit known vulnerabilities for which patches were available but not installed.</p>
+                    }
+                    else if (_knowledgeTitle == "Physical Security")
+                    {
+                        <p>Physical security is the protection of personnel, hardware, software, networks, and data from physical actions and events that could cause serious loss or damage to an enterprise, agency, or institution.</p>
+                        <p>Common Physical Attacks:</p>
+                        <ul>
+                            <li><strong>Tailgating:</strong> Following an authorized person through a secure door without swiping.</li>
+                            <li><strong>USB Drops:</strong> Leaving a "lost" USB drive in a parking lot containing malware.</li>
+                            <li><strong>Shoulder Surfing:</strong> Watching someone enter their PIN or password.</li>
+                            <li><strong>Dumpster Diving:</strong> Searching trash for sensitive documents or discarded hardware.</li>
+                        </ul>
+                        <p>Defense:</p>
+                        <p>Always shred sensitive documents. Never plug in unknown USB devices. Be aware of your surroundings when entering credentials in public.</p>
+                    }
+                    
+                    <div class="hl-analyst-note">
+                        <div class="hl-analyst-icon"><i class="bi bi-book"></i></div>
+                        <div>
+                            <div class="hl-analyst-title">ANALYST NOTE</div>
+                            <p class="hl-analyst-text">"Understanding these principles is the first step towards reaching the 'Cyber Guardian' rank. Most attackers rely on human error rather than technical exploits."</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="hl-modal-footer">
+                    <button class="hl-btn-primary" @onclick="CloseKnowledge">ACKNOWLEDGE INTELLIGENCE</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
-    // TODO: Domain grid showing 5 security domains
-    // TODO: XP bar, rank badge display, leaderboard (Hall of Ranks)
+    private enum State { Hub, Briefing, Playing, Debrief }
+    private State _currentState = State.Hub;
+    private int _selectedDomain = 1;
+    private int _lastXp = 0;
+    private string _lastBadge = "";
+    
+    private bool _showKnowledgeModal = false;
+    private string _knowledgeTitle = "";
+
+    protected override void OnInitialized()
+    {
+        if (!AuthService.IsAuthenticated) Navigation.NavigateTo("/login");
+        XpService.OnXpChanged += StateHasChanged;
+    }
+    
+    public void Dispose()
+    {
+        XpService.OnXpChanged -= StateHasChanged;
+    }
+
+    private void SelectDomain(int domain)
+    {
+        _selectedDomain = domain;
+        _currentState = State.Briefing;
+    }
+
+    private void ShowKnowledge(string title)
+    {
+        _knowledgeTitle = title;
+        _showKnowledgeModal = true;
+    }
+
+    private void CloseKnowledge()
+    {
+        _showKnowledgeModal = false;
+    }
+
+    private string GetKnowledgeIcon(string title)
+    {
+        return title switch {
+            "Social Engineering" => "bi-shield-check",
+            "Network Sniffing" => "bi-wifi",
+            "Zero Day Detection" => "bi-bug",
+            "Physical Security" => "bi-fingerprint",
+            _ => "bi-info-circle"
+        };
+    }
+
+    private void StartGame() => _currentState = State.Playing;
+    private void GoToHub() => _currentState = State.Hub;
+
+    private void GameCompleted(GameResult result)
+    {
+        if (result.Aborted)
+        {
+            _currentState = State.Hub;
+            return;
+        }
+
+        _lastXp = result.Xp;
+        _lastBadge = result.Badge;
+        XpService.AddXp(result.Xp);
+        if (!string.IsNullOrEmpty(result.Badge)) XpService.UnlockBadge(result.Badge);
+        _currentState = State.Debrief;
+    }
 }

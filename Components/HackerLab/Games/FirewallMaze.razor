@@ -1,9 +1,113 @@
-<!-- FirewallMaze.razor — Domain 5: Malware Defense -->
-<!-- Navigate antivirus agent through threat maze -->
+@implements IDisposable
+
+<div class="hacker-hud">
+    <div class="hacker-stat">
+        <span class="hacker-stat-label">Time Remaining</span>
+        <span class="hacker-stat-value @(_timeLeft <= 10 ? "text-danger" : "")">@_timeLeft.ToString("D2")s</span>
+    </div>
+    <div class="hacker-stat text-end">
+        <span class="hacker-stat-label">Threats Handled</span>
+        <span class="hacker-stat-value text-success">@_score</span>
+    </div>
+</div>
+
+<div class="hacker-timer-container">
+    <div class="hacker-timer-fill @(_timeLeft <= 10 ? "danger" : "")" style="width: @((_timeLeft / 60.0) * 100)%"></div>
+</div>
+
+<div class="hacker-terminal mx-auto" style="max-width: 600px;">
+    <div class="mb-4 text-muted border-bottom border-secondary pb-2">
+        <span>> Firewall Agent v2.4 initialized. Monitoring inbound processes...</span>
+    </div>
+    
+    @if (_currentProcess != null)
+    {
+        <div class="d-flex align-items-center mb-4">
+            <i class="bi @(_currentProcess.IsMalware ? "bi-bug-fill text-danger" : "bi-file-earmark-code text-info") fs-2 me-3"></i>
+            <div>
+                <strong class="fs-5" style="color: @(_currentProcess.IsMalware ? "#ef4444" : "#e5e7eb")">@_currentProcess.Name</strong><br/>
+                <small class="text-muted">Behavior: @_currentProcess.Behavior</small>
+            </div>
+        </div>
+        
+        <div class="d-flex gap-3">
+            <button class="btn btn-outline-success flex-grow-1 font-monospace" @onclick="() => HandleProcess(false)" disabled="@_isGameOver">
+                [ ALLOW EXECUTION ]
+            </button>
+            <button class="btn btn-outline-danger flex-grow-1 font-monospace" @onclick="() => HandleProcess(true)" disabled="@_isGameOver">
+                [ QUARANTINE ]
+            </button>
+        </div>
+    }
+</div>
 
 @code {
-    // TODO: Route threat types to correct quarantine zones
-    // Brief: malware types, cracked software risks, Task Manager
-    // Badge: Virus Warden
-    // Cross-link → System Audit
+    [Parameter] public EventCallback<GameResult> OnComplete { get; set; }
+    
+    private int _timeLeft = 60;
+    private int _score = 0;
+    private bool _isGameOver = false;
+    private System.Timers.Timer? _timer;
+    private Random _rand = new Random();
+    
+    private ProcessItem? _currentProcess;
+    
+    private List<ProcessItem> _processes = new() {
+        new ProcessItem { Name = "svchost.exe", Behavior = "System service execution", IsMalware = false },
+        new ProcessItem { Name = "Free_Minecraft_Hack.exe", Behavior = "Modifying registry keys silently", IsMalware = true },
+        new ProcessItem { Name = "Windows_Update.exe", Behavior = "Connecting to Microsoft servers", IsMalware = false },
+        new ProcessItem { Name = "pdf_invoice_urgent.vbs", Behavior = "Executing shell script in memory", IsMalware = true },
+        new ProcessItem { Name = "chrome.exe", Behavior = "HTTP traffic on port 443", IsMalware = false },
+        new ProcessItem { Name = "discord_setup.exe", Behavior = "Installing in AppData", IsMalware = false },
+        new ProcessItem { Name = "winlog0n.exe", Behavior = "Keylogging keyboard inputs", IsMalware = true },
+        new ProcessItem { Name = "System32_Patch_tool.bat", Behavior = "Disabling Windows Defender", IsMalware = true }
+    };
+
+    protected override void OnInitialized()
+    {
+        NextProcess();
+        
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += async (s, e) => {
+            _timeLeft--;
+            if (_timeLeft <= 0) {
+                _isGameOver = true;
+                _timer.Stop();
+                await InvokeAsync(() => OnComplete.InvokeAsync(new GameResult { 
+                    Xp = _score * 10, 
+                    Badge = _score >= 12 ? "Virus Warden" : "" 
+                }));
+            }
+            await InvokeAsync(StateHasChanged);
+        };
+        _timer.Start();
+    }
+    
+    private void NextProcess()
+    {
+        _currentProcess = _processes[_rand.Next(_processes.Count)];
+    }
+
+    private void HandleProcess(bool quarantine)
+    {
+        if (_isGameOver) return;
+        
+        if (quarantine == _currentProcess!.IsMalware)
+            _score++;
+        else
+            _score = Math.Max(0, _score - 1);
+            
+        NextProcess();
+    }
+    
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+    
+    class ProcessItem {
+        public string Name { get; set; } = "";
+        public string Behavior { get; set; } = "";
+        public bool IsMalware { get; set; }
+    }
 }

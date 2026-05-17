@@ -86,6 +86,8 @@ public class ThemeService
 
     private async Task ApplyTheme()
     {
-        await _js.InvokeVoidAsync("bastionTheme.apply", _isDarkMode, _accentColor);
+        // Business logic constraint: ONLY visually apply accent color if Light Mode is active.
+        string visualAccent = _isDarkMode ? "#1D4ED8" : _accentColor;
+        await _js.InvokeVoidAsync("bastionTheme.apply", _isDarkMode, visualAccent);
     }
 }

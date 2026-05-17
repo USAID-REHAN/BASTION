@@ -84,9 +84,9 @@ a:hover { opacity: 0.85; }
 .btn-bastion:active { transform: scale(0.97); }
 
 .btn-primary-bastion {
-    background: linear-gradient(135deg, var(--home-primary), #3B82F6);
+    background: var(--accent);
     color: white;
-    box-shadow: 0 4px 15px rgba(29, 78, 216, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary-bastion:hover {

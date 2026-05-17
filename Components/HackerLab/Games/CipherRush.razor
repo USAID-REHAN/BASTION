@@ -1,9 +1,105 @@
-<!-- CipherRush.razor — Domain 1: Password & Auth Security -->
-<!-- Decode password fragments under time pressure -->
+@implements IDisposable
+
+<div class="hacker-hud">
+    <div class="hacker-stat">
+        <span class="hacker-stat-label">Time Remaining</span>
+        <span class="hacker-stat-value @(_timeLeft <= 10 ? "text-danger" : "")">@_timeLeft.ToString("D2")s</span>
+    </div>
+    <div class="hacker-stat text-end">
+        <span class="hacker-stat-label">Ciphers Cracked</span>
+        <span class="hacker-stat-value text-success">@_score</span>
+    </div>
+</div>
+
+<div class="hacker-timer-container">
+    <div class="hacker-timer-fill @(_timeLeft <= 10 ? "danger" : "")" style="width: @((_timeLeft / 60.0) * 100)%"></div>
+</div>
+
+<div class="text-center py-4">
+    <h5 class="text-muted mb-2">DECODE THE PAYLOAD:</h5>
+    <h2 class="mb-4 hacker-text-glow font-monospace fs-1">@_currentCipher</h2>
+    
+    <input class="form-control bg-dark text-light border-secondary mx-auto mb-4 text-center font-monospace fs-4" 
+           style="max-width: 400px; box-shadow: inset 0 0 10px rgba(124,58,237,0.2);" 
+           @bind="_answer" 
+           @bind:event="oninput"
+           @onkeyup="HandleKeyUp"
+           placeholder="> type decoded text here..." 
+           disabled="@_isGameOver"
+           autofocus />
+           
+    <button class="hacker-btn-action px-5" @onclick="CheckAnswer" disabled="@_isGameOver">SUBMIT DECODE</button>
+</div>
 
 @code {
-    // TODO: Timed game — decode password fragments
-    // Brief: 2FA, password managers, entropy
-    // Badge: Cipher Breaker
-    // Cross-link → Password Breach Checker
+    [Parameter] public EventCallback<GameResult> OnComplete { get; set; }
+    
+    private int _timeLeft = 60;
+    private int _score = 0;
+    private string _answer = "";
+    private string _currentCipher = "";
+    private string _currentPlaintext = "";
+    private bool _isGameOver = false;
+    private System.Timers.Timer? _timer;
+    
+    private readonly string[] _words = { "ADMIN", "ROOT", "SYSTEM", "KERNEL", "BYPASS", "PAYLOAD", "PROXY", "BASTION", "HACKER", "SECURE" };
+    private Random _rand = new Random();
+
+    protected override void OnInitialized()
+    {
+        NextCipher();
+        _timer = new System.Timers.Timer(1000);
+        _timer.Elapsed += async (s, e) => {
+            _timeLeft--;
+            if (_timeLeft <= 0) {
+                _isGameOver = true;
+                _timer.Stop();
+                await InvokeAsync(() => OnComplete.InvokeAsync(new GameResult { 
+                    Xp = _score * 15, 
+                    Badge = _score >= 5 ? "Cipher Breaker" : "" 
+                }));
+            }
+            await InvokeAsync(StateHasChanged);
+        };
+        _timer.Start();
+    }
+    
+    private void NextCipher()
+    {
+        _currentPlaintext = _words[_rand.Next(_words.Length)];
+        if (_rand.Next(2) == 0)
+        {
+            _currentCipher = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(_currentPlaintext)) + " [BASE64]";
+        }
+        else
+        {
+            char[] chars = _currentPlaintext.ToCharArray();
+            for(int i = 0; i < chars.Length; i++) {
+                chars[i] = (char)(chars[i] + 3);
+            }
+            _currentCipher = new string(chars) + " [ROT3]";
+        }
+        _answer = "";
+    }
+
+    private void HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") CheckAnswer();
+    }
+
+    private void CheckAnswer()
+    {
+        if (_isGameOver) return;
+        
+        if (_answer.Trim().Equals(_currentPlaintext, StringComparison.OrdinalIgnoreCase))
+        {
+            _score++;
+            NextCipher();
+        }
+    }
+    
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
 }

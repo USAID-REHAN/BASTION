@@ -47,6 +47,9 @@ builder.Services.AddHttpClient<FinShieldService>()
         client.Timeout = TimeSpan.FromSeconds(30);
     });
 
+// ── Gamification Services ──
+builder.Services.AddScoped<XpService>();
+
 // ── LexGuard Services ──
 builder.Services.AddScoped<DocumentAnalysisService>();
 builder.Services.AddScoped<PdfReportService>();
