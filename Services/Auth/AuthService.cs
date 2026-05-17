@@ -1,28 +1,17 @@
 using System.Security.Claims;
+using BASTION.Data;
+using BASTION.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace BASTION.Services.Auth;
 
 /// <summary>
-/// In-memory authentication service for BASTION.
+/// Database-backed authentication service for BASTION.
 /// Manages user registration, login, and session state.
-/// Will be replaced with ASP.NET Identity + JWT when database layer is integrated.
 /// </summary>
 public class AuthService
 {
-    private static readonly Dictionary<string, UserAccount> _users = new()
-    {
-        ["admin@bastion.app"] = new UserAccount
-        {
-            Email = "admin@bastion.app",
-            FullName = "BASTION Admin",
-            PasswordHash = HashPassword("Admin@123"),
-            Role = "Admin",
-            City = "Islamabad",
-            CreatedAt = DateTime.UtcNow,
-            MfaEnabled = false
-        }
-    };
-
+    private readonly BastionDbContext _dbContext;
     private static readonly List<SessionInfo> _sessions = new();
     private UserAccount? _currentUser;
     public event Action? OnAuthStateChanged;
@@ -31,12 +20,18 @@ public class AuthService
     public bool IsAdmin => _currentUser?.Role == "Admin";
     public UserAccount? CurrentUser => _currentUser;
 
+    public AuthService(BastionDbContext dbContext)
+    {
+        _dbContext = dbContext;
+    }
+
     public (bool Success, string Message) Register(string fullName, string email, string password, string city)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             return (false, "Email and password are required.");
 
-        if (_users.ContainsKey(email.ToLower()))
+        email = email.ToLower();
+        if (_dbContext.Users.Any(u => u.Email == email))
             return (false, "An account with this email already exists.");
 
         if (password.Length < 8)
@@ -44,7 +39,7 @@ public class AuthService
 
         var user = new UserAccount
         {
-            Email = email.ToLower(),
+            Email = email,
             FullName = fullName,
             PasswordHash = HashPassword(password),
             Role = "User",
@@ -53,7 +48,8 @@ public class AuthService
             MfaEnabled = false
         };
 
-        _users[email.ToLower()] = user;
+        _dbContext.Users.Add(user);
+        _dbContext.SaveChanges();
         return (true, "Account created successfully!");
     }
 
@@ -63,7 +59,8 @@ public class AuthService
             return (false, "Email and password are required.");
 
         email = email.ToLower();
-        if (!_users.TryGetValue(email, out var user))
+        var user = _dbContext.Users.FirstOrDefault(u => u.Email == email);
+        if (user == null)
             return (false, "Invalid email or password.");
 
         if (user.IsLockedOut && user.LockoutEnd > DateTime.UtcNow)
@@ -80,8 +77,12 @@ public class AuthService
                 user.IsLockedOut = true;
                 user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
                 user.FailedAttempts = 0;
-                return (false, "Account locked for 15 minutes after 5 failed attempts.");
             }
+            _dbContext.SaveChanges();
+            
+            if (user.IsLockedOut)
+                return (false, "Account locked for 15 minutes after 5 failed attempts.");
+                
             return (false, $"Invalid email or password. {5 - user.FailedAttempts} attempt(s) remaining.");
         }
 
@@ -90,6 +91,7 @@ public class AuthService
         user.IsLockedOut = false;
         user.LockoutEnd = null;
         _currentUser = user;
+        _dbContext.SaveChanges();
 
         _sessions.Add(new SessionInfo
         {
@@ -119,7 +121,9 @@ public class AuthService
     {
         if (_currentUser == null) return false;
         if (_currentUser.PasswordHash != HashPassword(currentPassword)) return false;
+        
         _currentUser.PasswordHash = HashPassword(newPassword);
+        _dbContext.SaveChanges();
         return true;
     }
 
@@ -151,27 +155,10 @@ public class AuthService
 
     private static string HashPassword(string password)
     {
-        // Simple hash for development — will be replaced with BCrypt/Argon2
         using var sha = System.Security.Cryptography.SHA256.Create();
         var bytes = System.Text.Encoding.UTF8.GetBytes(password + "BASTION_SALT_2026");
         return Convert.ToBase64String(sha.ComputeHash(bytes));
     }
-}
-
-public class UserAccount
-{
-    public string Email { get; set; } = "";
-    public string FullName { get; set; } = "";
-    public string PasswordHash { get; set; } = "";
-    public string Role { get; set; } = "User";
-    public string? City { get; set; }
-    public string? AvatarUrl { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public bool MfaEnabled { get; set; }
-    public string? MfaSecret { get; set; }
-    public int FailedAttempts { get; set; }
-    public bool IsLockedOut { get; set; }
-    public DateTime? LockoutEnd { get; set; }
 }
 
 public class SessionInfo

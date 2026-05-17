@@ -35,7 +35,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px;
+    padding: 20px;
     position: relative;
     z-index: 2;
 }
@@ -48,7 +48,7 @@
 
 .gate-logo {
     text-align: center;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
 }
 
 .gate-logo-icon {
@@ -65,7 +65,7 @@
 }
 
 .gate-logo h1 {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: 4px;
     background: linear-gradient(135deg, #fff, #94A3B8);
@@ -76,7 +76,7 @@
 
 .gate-logo p {
     color: var(--text-muted-dark);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     margin-top: 4px;
 }
 
@@ -87,12 +87,12 @@
     -webkit-backdrop-filter: blur(24px);
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: var(--radius-xl);
-    padding: 36px;
+    padding: 16px;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
 }
 
 .gate-input-group {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .gate-input-group label {
@@ -105,7 +105,7 @@
 
 .gate-input {
     width: 100%;
-    padding: 12px 16px;
+    padding: 8px 12px;
     font-family: var(--font-sans);
     font-size: 0.95rem;
     background: rgba(15, 23, 42, 0.6);
@@ -207,7 +207,7 @@
 /* ── Auth Buttons ── */
 .btn-gate {
     width: 100%;
-    padding: 13px;
+    padding: 10px;
     font-family: var(--font-sans);
     font-weight: 700;
     font-size: 0.95rem;
@@ -282,7 +282,7 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    margin: 24px 0;
+    margin: 16px 0;
     color: var(--text-muted-dark);
     font-size: 0.8rem;
 }
@@ -300,7 +300,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px;
+    padding: 20px;
     position: relative;
     z-index: 2;
 }
@@ -312,11 +312,11 @@
 
 .gate-tip-icon {
     font-size: 3rem;
-    margin-bottom: 24px;
+    margin-bottom: 12px;
 }
 
 .gate-tip-title {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 700;
     margin-bottom: 12px;
     color: var(--text-primary);
@@ -324,7 +324,7 @@
 
 .gate-tip-text {
     color: var(--text-muted-dark);
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     line-height: 1.7;
 }
 

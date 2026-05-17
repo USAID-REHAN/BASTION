@@ -17,6 +17,10 @@
     animation: fadeInUp 0.5s ease forwards;
 }
 
+.bastion-light .lex-page {
+    background-color: #FEF3C7 !important; /* Light Gold */
+}
+
 .lex-page-header {
     background: linear-gradient(135deg, rgba(217, 119, 6, 0.12) 0%, rgba(217, 119, 6, 0.04) 100%);
     border: 1px solid rgba(217, 119, 6, 0.15);

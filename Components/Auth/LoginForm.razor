@@ -163,12 +163,13 @@
             await SoundService.PlayChime();
             StateHasChanged();
             await Task.Delay(600);
-            Navigation.NavigateTo("/", forceLoad: true);
+            Navigation.NavigateTo("/");
         }
         else
         {
             _errorMessage = result.Message;
             _isLoading = false;
+            await SoundService.PlayBeep();
             try { await JS.InvokeVoidAsync("bastionGateKeeper.shakeElement", "login-error"); } catch { }
         }
     }

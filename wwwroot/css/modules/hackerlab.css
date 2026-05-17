@@ -13,6 +13,49 @@
     animation: fadeIn 0.4s ease;
 }
 
+/* ── Light Mode Overrides ── */
+.bastion-light .hl-academy-container {
+    background: #991B1B !important; /* Deep Crimson Red */
+}
+
+.bastion-light .hl-domain-card,
+.bastion-light .hl-classroom,
+.bastion-light .hl-class-card,
+.bastion-light .hl-guardian-path,
+.bastion-light .hacker-panel,
+.bastion-light .hl-header-stats,
+.bastion-light .hl-hud,
+.bastion-light .hl-rank-item {
+    background-color: #FEE2E2 !important; /* Light Red instead of White */
+    background: #FEE2E2 !important;
+    color: #0F172A !important;
+    border-color: rgba(153, 27, 27, 0.2) !important;
+}
+
+.bastion-light .hl-title,
+.bastion-light .hl-section-title,
+.bastion-light .hl-class-title,
+.bastion-light .hl-domain-title,
+.bastion-light .hl-guardian-header h2,
+.bastion-light .hl-stat-value {
+    color: #0F172A !important;
+    -webkit-text-fill-color: #0F172A !important;
+}
+
+.bastion-light .hl-subtitle,
+.bastion-light .hl-class-desc,
+.bastion-light .hl-domain-subtitle,
+.bastion-light .hl-stat-label,
+.bastion-light .hl-guardian-header p {
+    color: #475569 !important;
+}
+
+.bastion-light .hl-domain-icon {
+    background: rgba(220, 38, 38, 0.1) !important;
+    color: #DC2626 !important;
+    border-color: rgba(220, 38, 38, 0.2) !important;
+}
+
 /* ── Hacker Base Styles ── */
 .hacker-panel {
     background: var(--hacker-dark);
@@ -123,7 +166,7 @@
 
 /* ── Redesigned HackerLab UI ── */
 .hl-academy-container {
-    padding: 20px 0;
+    padding: 20px 24px;
     display: flex;
     flex-direction: column;
     gap: 32px;
@@ -209,7 +252,7 @@
 }
 
 .hl-domain-card {
-    min-width: 240px;
+    min-width: 150px;
     background: #110e20;
     border: 1px solid rgba(255,255,255,0.05);
     border-radius: 16px;
@@ -224,6 +267,10 @@
     border-color: #8b5cf6;
     transform: translateY(-4px);
     box-shadow: 0 10px 20px rgba(0,0,0,0.5), 0 0 15px rgba(139, 92, 246, 0.2);
+}
+
+.hl-domain-card:last-child {
+    margin-right: 24px !important;
 }
 
 .hl-domain-bg-icon {
