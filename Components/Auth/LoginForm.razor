@@ -21,8 +21,8 @@
 
             <!-- Glass Form -->
             <div class="gate-glass-form">
-                <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px;">Welcome Back</h3>
-                <p style="color: var(--text-muted-dark); font-size: 0.85rem; margin-bottom: 24px;">Sign in to your account</p>
+                <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; color: #ffffff;">Welcome Back</h3>
+                <p style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 24px;">Sign in to your account</p>
 
                 @if (!string.IsNullOrEmpty(_errorMessage))
                 {
@@ -115,6 +115,10 @@
 </div>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public string? Reason { get; set; }
+
     private LoginModel _loginModel = new();
     private string? _errorMessage;
     private string? _successMessage;
@@ -133,6 +137,11 @@
 
     protected override void OnInitialized()
     {
+        if (Reason == "revoked")
+        {
+            _errorMessage = "The admin has revoked your current session.";
+        }
+
         if (AuthService.IsAuthenticated)
         {
             Navigation.NavigateTo("/");

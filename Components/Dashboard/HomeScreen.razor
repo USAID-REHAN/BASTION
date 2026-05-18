@@ -1,9 +1,5 @@
 @page "/"
 @rendermode InteractiveServer
-@inject IEnumerable<IModule> Modules
-@inject BASTION.Services.Auth.AuthService AuthService
-@inject NavigationManager Navigation
-@inject IJSRuntime JS
 
 <PageTitle>BASTION — Dashboard</PageTitle>
 
@@ -101,61 +97,3 @@
         </div>
     </div>
 </div>
-
-@code {
-    private int _activeModules;
-    private int _scansCompleted;
-    private string _userRank = "Civilian";
-    private List<ActivityItem> _activities = new();
-    private bool _gaugeAnimated;
-
-    protected override void OnInitialized()
-    {
-        if (!AuthService.IsAuthenticated)
-        {
-            Navigation.NavigateTo("/login");
-            return;
-        }
-
-        _activeModules = Modules.Count(m => m.Name != "GateKeeper" && m.Name != "Dashboard");
-        _scansCompleted = 0;
-
-        _activities = new List<ActivityItem>
-        {
-            new() { Text = "Signed in successfully", Color = "var(--success)", Time = "Just now" },
-            new() { Text = "Account created on BASTION", Color = "var(--info)", Time = DateTime.Now.ToString("MMM dd") },
-            new() { Text = "Welcome to your Digital Fortress!", Color = "var(--home-primary)", Time = DateTime.Now.ToString("MMM dd") }
-        };
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && AuthService.IsAuthenticated && !_gaugeAnimated)
-        {
-            _gaugeAnimated = true;
-            try
-            {
-                await JS.InvokeVoidAsync("bastionHome.startClock", "dashboard-clock");
-                await JS.InvokeVoidAsync("bastionHome.animateGauge", "score-gauge-ring", 25);
-                await JS.InvokeVoidAsync("bastionAnimate.countUp", "score-value", 25, 1500);
-            }
-            catch { /* JS not ready */ }
-        }
-    }
-
-    private string GetDelayClass(int order) => order switch
-    {
-        <= 3 => "delay-1",
-        <= 4 => "delay-2",
-        <= 5 => "delay-3",
-        <= 6 => "delay-4",
-        _ => "delay-5"
-    };
-
-    private class ActivityItem
-    {
-        public string Text { get; set; } = "";
-        public string Color { get; set; } = "";
-        public string Time { get; set; } = "";
-    }
-}

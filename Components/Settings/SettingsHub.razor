@@ -6,7 +6,6 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-
 <PageTitle>BASTION — Settings</PageTitle>
 
 <div class="settings-page">
@@ -32,23 +31,7 @@
     @if (_activeTab == "theme")
     {
         <div class="settings-section">
-            <!-- Dark/Light Mode -->
-            <div class="settings-card">
-                <div class="settings-card-title">Appearance</div>
-                <div class="settings-card-desc">Choose between dark and light mode</div>
-
-                <div class="toggle-row">
-                    <div class="toggle-info">
-                        <h4><i class="bi bi-moon-stars"></i> Dark Mode</h4>
-                        <p>Use dark colour palette (default)</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked="@ThemeService.IsDarkMode" @onchange="ToggleDarkMode" />
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
-
+            <ThemePanel />
         </div>
     }
 
@@ -56,78 +39,7 @@
     @if (_activeTab == "sound")
     {
         <div class="settings-section">
-            <div class="settings-card">
-                <div class="settings-card-title">Sound Effects</div>
-                <div class="settings-card-desc">Control audio feedback in BASTION</div>
-
-                <!-- Chime Setting -->
-                <div class="toggle-row">
-                    <div class="toggle-info">
-                        <h4><i class="bi bi-volume-up"></i> Enable Chime</h4>
-                        <p>Play a chime on successful analysis and login</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked="@SoundService.IsChimeEnabled" @onchange="ToggleChime" />
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div style="margin-top: 10px; margin-bottom: 20px;">
-                    <button class="sound-preview-btn" @onclick="PreviewChime">
-                        <i class="bi bi-play-circle"></i> Preview Chime
-                    </button>
-                </div>
-
-                <!-- Beep Setting -->
-                <div class="toggle-row" style="border-top: 1px solid var(--border-current); padding-top: 20px;">
-                    <div class="toggle-info">
-                        <h4><i class="bi bi-volume-down"></i> Enable Beep</h4>
-                        <p>Play a beep on unsuccessful login or errors</p>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox" checked="@SoundService.IsBeepEnabled" @onchange="ToggleBeep" />
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-
-                <div style="margin-top: 10px;">
-                    <button class="sound-preview-btn" @onclick="PreviewBeep">
-                        <i class="bi bi-play-circle"></i> Preview Beep
-                    </button>
-                </div>
-            </div>
-
-            <!-- Background Music -->
-            <div class="settings-card" style="margin-top: 20px;">
-                <div class="settings-card-title">Background Music</div>
-                <div class="settings-card-desc">Choose a track to play in the background</div>
-
-                <div style="display: grid; gap: 12px; margin-top: 15px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="radio" name="bgm" value="none" checked="@(SoundService.SelectedBgm == "none")" @onchange='() => SelectBgm("none")' />
-                        <div>
-                            <div style="font-weight: 600;">None</div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">Silence</div>
-                        </div>
-                    </label>
-                    
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="radio" name="bgm" value="bgm1" checked="@(SoundService.SelectedBgm == "bgm1")" @onchange='() => SelectBgm("bgm1")' />
-                        <div>
-                            <div style="font-weight: 600;">Track 1</div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">Cyber Ambient (bgm1.mpeg)</div>
-                        </div>
-                    </label>
-
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="radio" name="bgm" value="bgm2" checked="@(SoundService.SelectedBgm == "bgm2")" @onchange='() => SelectBgm("bgm2")' />
-                        <div>
-                            <div style="font-weight: 600;">Track 2</div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">Neon Synth (bgm2.mpeg)</div>
-                        </div>
-                    </label>
-                </div>
-            </div>
+            <SoundPanel />
         </div>
     }
 
@@ -135,106 +47,7 @@
     @if (_activeTab == "account")
     {
         <div class="settings-section">
-            <!-- Profile Info -->
-            <div class="settings-card">
-                <div class="settings-card-title">Profile Information</div>
-                <div class="settings-card-desc">Your account details</div>
-
-                <div style="display: grid; gap: 14px;">
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-current); font-size: 0.9rem;">
-                        <span style="color: var(--text-muted);">Full Name</span>
-                        <span style="font-weight: 600;">@AuthService.CurrentUser?.FullName</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-current); font-size: 0.9rem;">
-                        <span style="color: var(--text-muted);">Email</span>
-                        <span style="font-weight: 600;">@AuthService.CurrentUser?.Email</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-current); font-size: 0.9rem;">
-                        <span style="color: var(--text-muted);">Role</span>
-                        <span class="badge-bastion @(AuthService.IsAdmin ? "badge-caution" : "badge-info")">
-                            @AuthService.CurrentUser?.Role
-                        </span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 0.9rem;">
-                        <span style="color: var(--text-muted);">City</span>
-                        <span style="font-weight: 600;">@(AuthService.CurrentUser?.City ?? "Not set")</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Change Password -->
-            <div class="settings-card">
-                <div class="settings-card-title">Change Password</div>
-                <div class="settings-card-desc">Update your account password</div>
-
-                @if (!string.IsNullOrEmpty(_pwMessage))
-                {
-                    <div class="@(_pwSuccess ? "gate-success" : "gate-error")" style="margin-bottom: 16px;">
-                        <i class="bi @(_pwSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i> @_pwMessage
-                    </div>
-                }
-
-                <div class="gate-input-group">
-                    <label>Current Password</label>
-                    <input type="password" class="gate-input" @bind="_currentPw" placeholder="Enter current password" />
-                </div>
-                <div class="gate-input-group">
-                    <label>New Password</label>
-                    <input type="password" class="gate-input" @bind="_newPw" placeholder="Enter new password" />
-                </div>
-                <div class="gate-input-group">
-                    <label>Confirm New Password</label>
-                    <input type="password" class="gate-input" @bind="_confirmNewPw" placeholder="Re-enter new password" />
-                </div>
-                <button class="btn-bastion btn-primary-bastion" @onclick="ChangePassword"
-                        disabled="@(string.IsNullOrEmpty(_currentPw) || _newPw?.Length < 8 || _newPw != _confirmNewPw)">
-                    <i class="bi bi-key"></i> Update Password
-                </button>
-            </div>
-
-            <!-- Active Sessions -->
-            <div class="settings-card">
-                <div class="settings-card-title">Active Sessions</div>
-                <div class="settings-card-desc">Manage your logged-in devices</div>
-
-                @foreach (var session in AuthService.GetActiveSessions())
-                {
-                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border-current);">
-                        <div>
-                            <div style="font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                                <i class="bi bi-laptop"></i> @session.Device
-                                @if (session.IsActive)
-                                {
-                                    <span class="badge-bastion badge-safe">Active</span>
-                                }
-                                else
-                                {
-                                    <span class="badge-bastion badge-danger">Revoked</span>
-                                }
-                            </div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">
-                                @session.Location · @session.LoginTime.ToString("MMM dd, yyyy h:mm tt")
-                            </div>
-                        </div>
-                        @if (session.IsActive)
-                        {
-                            <button class="btn-bastion btn-ghost-bastion" style="font-size: 0.8rem; padding: 5px 12px;"
-                                    @onclick="() => RevokeSession(session)">
-                                Revoke
-                            </button>
-                        }
-                    </div>
-                }
-            </div>
-
-            <!-- Danger Zone -->
-            <div class="account-danger-zone">
-                <h4><i class="bi bi-exclamation-triangle"></i> Danger Zone</h4>
-                <p>Permanently delete your account. This action cannot be undone.</p>
-                <button class="btn-bastion btn-danger-bastion" style="font-size: 0.85rem; padding: 8px 16px;">
-                    <i class="bi bi-trash3"></i> Delete Account
-                </button>
-            </div>
+            <AccountPanel />
         </div>
     }
 </div>
@@ -242,83 +55,8 @@
 @code {
     private string _activeTab = "theme";
 
-    // Password change
-    private string? _currentPw;
-    private string? _newPw;
-    private string? _confirmNewPw;
-    private string? _pwMessage;
-    private bool _pwSuccess;
-
-    private async Task SetTab(string tab)
+    private void SetTab(string tab)
     {
         _activeTab = tab;
-    }
-
-    private async Task ToggleDarkMode(ChangeEventArgs e)
-    {
-        var isDark = (bool)(e.Value ?? true);
-        await ThemeService.SetDarkMode(isDark);
-    }
-
-    private async Task ToggleChime(ChangeEventArgs e)
-    {
-        var enabled = (bool)(e.Value ?? true);
-        await SoundService.SetChimeEnabled(enabled);
-    }
-
-    private async Task ToggleBeep(ChangeEventArgs e)
-    {
-        var enabled = (bool)(e.Value ?? true);
-        await SoundService.SetBeepEnabled(enabled);
-    }
-
-    private async Task PreviewChime()
-    {
-        await SoundService.PlayPreviewChime();
-    }
-
-    private async Task PreviewBeep()
-    {
-        await SoundService.PlayPreviewBeep();
-    }
-
-    private async Task SelectBgm(string bgm)
-    {
-        await SoundService.SetBgm(bgm);
-    }
-
-    private void ChangePassword()
-    {
-        _pwMessage = null;
-        if (string.IsNullOrEmpty(_newPw) || _newPw.Length < 8)
-        {
-            _pwMessage = "New password must be at least 8 characters.";
-            _pwSuccess = false;
-            return;
-        }
-        if (_newPw != _confirmNewPw)
-        {
-            _pwMessage = "New passwords do not match.";
-            _pwSuccess = false;
-            return;
-        }
-
-        var result = AuthService.ChangePassword(_currentPw!, _newPw);
-        if (result)
-        {
-            _pwMessage = "Password updated successfully!";
-            _pwSuccess = true;
-            _currentPw = _newPw = _confirmNewPw = "";
-        }
-        else
-        {
-            _pwMessage = "Current password is incorrect.";
-            _pwSuccess = false;
-        }
-    }
-
-    private void RevokeSession(SessionInfo session)
-    {
-        AuthService.RevokeSession(session);
     }
 }

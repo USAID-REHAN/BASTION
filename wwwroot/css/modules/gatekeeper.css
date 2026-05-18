@@ -125,6 +125,34 @@
     border-color: var(--danger);
 }
 
+/* ── Light Mode Overrides ── */
+.bastion-light .gate-input {
+    background: #ffffff;
+    color: #0F172A;
+    border: 1px solid #CBD5E1;
+}
+
+.bastion-light .gate-input:focus {
+    border-color: var(--gate-primary);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+.bastion-light .gate-input-group label {
+    color: #1E293B;
+}
+
+.bastion-light .gate-glass-form {
+    background: #ffffff;
+    border-color: #E2E8F0;
+}
+
+.bastion-light .gate-logo h1 {
+    background: linear-gradient(135deg, #0F172A, #334155);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
 /* ── Password Strength Meter ── */
 .strength-meter {
     margin-top: 8px;

@@ -21,7 +21,9 @@
     <nav class="sidebar-nav">
         @foreach (var module in Modules.Where(m => m.Name != "GateKeeper").OrderBy(m => m.Order))
         {
-            var isActive = Navigation.Uri.Contains(module.RouteUrl == "/" ? Navigation.BaseUri : module.RouteUrl);
+            var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+            var isActive = (module.RouteUrl == "/" && string.IsNullOrEmpty(relativePath)) 
+                           || (module.RouteUrl != "/" && module.RouteUrl.TrimStart('/') == relativePath);
             <a href="@module.RouteUrl"
                class="sidebar-item @(isActive ? "active" : "")"
                style="@(isActive ? $"--item-color: {module.PrimaryHex}" : "")">
@@ -29,6 +31,20 @@
                 @if (!IsCollapsed)
                 {
                     <span class="sidebar-item-text">@module.Name</span>
+                }
+            </a>
+        }
+
+        @if (AuthService.IsAdmin)
+        {
+            var isAdminActive = Navigation.Uri.Contains("/admin");
+            <a href="/admin"
+               class="sidebar-item @(isAdminActive ? "active" : "")"
+               style="@(isAdminActive ? $"--item-color: var(--gate-primary)" : "")">
+                <i class="bi bi-shield-lock sidebar-item-icon" style="@(isAdminActive ? $"color: var(--gate-primary)" : "")"></i>
+                @if (!IsCollapsed)
+                {
+                    <span class="sidebar-item-text">Admin Portal</span>
                 }
             </a>
         }

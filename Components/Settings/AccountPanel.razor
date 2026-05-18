@@ -1,7 +1,111 @@
-<!-- AccountPanel.razor — Change password, manage sessions, delete account -->
+@inject BASTION.Services.Auth.AuthService AuthService
+
+<!-- Profile Info -->
+<div class="settings-card">
+    <div class="settings-card-title">Profile Information</div>
+    <div class="settings-card-desc">Your account details</div>
+
+    <div style="display: grid; gap: 14px;">
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-current); font-size: 0.9rem;">
+            <span style="color: var(--text-muted);">Full Name</span>
+            <span style="font-weight: 600;">@AuthService.CurrentUser?.FullName</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-current); font-size: 0.9rem;">
+            <span style="color: var(--text-muted);">Email</span>
+            <span style="font-weight: 600;">@AuthService.CurrentUser?.Email</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-current); font-size: 0.9rem;">
+            <span style="color: var(--text-muted);">Role</span>
+            <span class="badge-bastion @(AuthService.IsAdmin ? "badge-caution" : "badge-info")">
+                @AuthService.CurrentUser?.Role
+            </span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 0.9rem;">
+            <span style="color: var(--text-muted);">City</span>
+            <span style="font-weight: 600;">@(AuthService.CurrentUser?.City ?? "Not set")</span>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password -->
+<div class="settings-card">
+    <div class="settings-card-title">Change Password</div>
+    <div class="settings-card-desc">Update your account password</div>
+
+    @if (!string.IsNullOrEmpty(_pwMessage))
+    {
+        <div class="@(_pwSuccess ? "gate-success" : "gate-error")" style="margin-bottom: 16px;">
+            <i class="bi @(_pwSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i> @_pwMessage
+        </div>
+    }
+
+    <div class="gate-input-group">
+        <label>Current Password</label>
+        <input type="password" class="gate-input" @bind="_currentPw" placeholder="Enter current password" />
+    </div>
+    <div class="gate-input-group">
+        <label>New Password</label>
+        <input type="password" class="gate-input" @bind="_newPw" placeholder="Enter new password" />
+    </div>
+    <div class="gate-input-group">
+        <label>Confirm New Password</label>
+        <input type="password" class="gate-input" @bind="_confirmNewPw" placeholder="Re-enter new password" />
+    </div>
+    <button class="btn-bastion btn-primary-bastion" @onclick="ChangePassword"
+            disabled="@(string.IsNullOrEmpty(_currentPw) || _newPw?.Length < 8 || _newPw != _confirmNewPw)">
+        <i class="bi bi-key"></i> Update Password
+    </button>
+</div>
+
+
+@if (!AuthService.IsAdmin)
+{
+    <!-- Danger Zone -->
+    <div class="account-danger-zone">
+        <h4><i class="bi bi-exclamation-triangle"></i> Danger Zone</h4>
+        <p>Permanently delete your account. This action cannot be undone.</p>
+        <button class="btn-bastion btn-danger-bastion" style="font-size: 0.85rem; padding: 8px 16px;">
+            <i class="bi bi-trash3"></i> Delete Account
+        </button>
+    </div>
+}
 
 @code {
-    // TODO: Change password form
-    // TODO: Manage active sessions (links to SessionMonitor)
-    // TODO: Delete account with confirmation
+    // Password change
+    private string? _currentPw;
+    private string? _newPw;
+    private string? _confirmNewPw;
+    private string? _pwMessage;
+    private bool _pwSuccess;
+
+    private void ChangePassword()
+    {
+        _pwMessage = null;
+        if (string.IsNullOrEmpty(_newPw) || _newPw.Length < 8)
+        {
+            _pwMessage = "New password must be at least 8 characters.";
+            _pwSuccess = false;
+            return;
+        }
+        if (_newPw != _confirmNewPw)
+        {
+            _pwMessage = "New passwords do not match.";
+            _pwSuccess = false;
+            return;
+        }
+
+        var result = AuthService.ChangePassword(_currentPw!, _newPw);
+        if (result)
+        {
+            _pwMessage = "Password updated successfully!";
+            _pwSuccess = true;
+            _currentPw = _newPw = _confirmNewPw = "";
+        }
+        else
+        {
+            _pwMessage = "Current password is incorrect.";
+            _pwSuccess = false;
+        }
+    }
+
 }

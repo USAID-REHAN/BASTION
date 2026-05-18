@@ -14,4 +14,7 @@ public class UserAccount
     public int FailedAttempts { get; set; }
     public bool IsLockedOut { get; set; }
     public DateTime? LockoutEnd { get; set; }
+    public int CurrentXp { get; set; } = 0;
+    public string CurrentRank { get; set; } = "Civilian";
 }
+

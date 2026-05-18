@@ -9,12 +9,13 @@ namespace BASTION.Services.Auth;
 /// Database-backed authentication service for BASTION.
 /// Manages user registration, login, and session state.
 /// </summary>
-public class AuthService
+public class AuthService : IDisposable
 {
     private readonly BastionDbContext _dbContext;
     private static readonly List<SessionInfo> _sessions = new();
     private UserAccount? _currentUser;
     public event Action? OnAuthStateChanged;
+    public static event Action<string>? OnSessionRevoked;
 
     public bool IsAuthenticated => _currentUser != null;
     public bool IsAdmin => _currentUser?.Role == "Admin";
@@ -23,6 +24,16 @@ public class AuthService
     public AuthService(BastionDbContext dbContext)
     {
         _dbContext = dbContext;
+        OnSessionRevoked += HandleSessionRevoked;
+    }
+
+    private void HandleSessionRevoked(string email)
+    {
+        if (_currentUser?.Email == email)
+        {
+            _currentUser = null;
+            OnAuthStateChanged?.Invoke();
+        }
     }
 
     public (bool Success, string Message) Register(string fullName, string email, string password, string city)
@@ -133,9 +144,23 @@ public class AuthService
         return _sessions.Where(s => s.UserEmail == _currentUser.Email).OrderByDescending(s => s.LoginTime).ToList();
     }
 
+    public List<SessionInfo> GetAllSessions()
+    {
+        return _sessions.OrderByDescending(s => s.LoginTime).ToList();
+    }
+
     public void RevokeSession(SessionInfo session)
     {
+        var user = _dbContext.Users.FirstOrDefault(u => u.Email == session.UserEmail);
+        if (user != null && user.Role == "Admin") return; // Cannot revoke admin sessions
+
         session.IsActive = false;
+        OnSessionRevoked?.Invoke(session.UserEmail);
+    }
+
+    public void Dispose()
+    {
+        OnSessionRevoked -= HandleSessionRevoked;
     }
 
     public ClaimsPrincipal GetClaimsPrincipal()
