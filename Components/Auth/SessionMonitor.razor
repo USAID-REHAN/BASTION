@@ -1,8 +1,52 @@
-<!-- SessionMonitor.razor — Active sessions panel in user settings -->
+@inject BASTION.Services.Auth.AuthService AuthService
 
-<h3>Active Sessions</h3>
+<div class="settings-card">
+    <div class="settings-card-title">Active Sessions</div>
+    <div class="settings-card-desc">Manage your active sessions and devices</div>
+
+    <div class="session-list" style="display: flex; flex-direction: column; gap: 16px; margin-top: 20px;">
+        @if (_sessions == null || !_sessions.Any())
+        {
+            <div class="text-muted">No active sessions found.</div>
+        }
+        else
+        {
+            @foreach (var session in _sessions)
+            {
+                <div class="session-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <div style="font-size: 1.5rem; color: var(--text-muted-dark);">
+                            <i class="bi bi-laptop"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; color: #ffffff;">@session.Device</div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted-dark);">
+                                <span><i class="bi bi-geo-alt"></i> @session.Location</span>
+                                <span style="margin-left: 12px;"><i class="bi bi-clock"></i> @session.LoginTime.ToString("yyyy-MM-dd HH:mm")</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        @if (session.IsActive)
+                        {
+                            <span style="display: inline-block; padding: 4px 8px; background: rgba(16, 185, 129, 0.2); color: #10b981; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">Active</span>
+                        }
+                        else
+                        {
+                            <span style="display: inline-block; padding: 4px 8px; background: rgba(148, 163, 184, 0.2); color: #94a3b8; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">Revoked</span>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
 
 @code {
-    // TODO: Display device, location, login time for each active session
-    // TODO: Remote revoke button per session
+    private List<BASTION.Services.Auth.SessionInfo> _sessions = new();
+
+    protected override void OnInitialized()
+    {
+        _sessions = AuthService.GetActiveSessions();
+    }
 }

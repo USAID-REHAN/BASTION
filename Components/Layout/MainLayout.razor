@@ -30,10 +30,13 @@ else
 
                 <!-- Top Bar -->
                 <header class="bastion-topbar">
-                    <button class="topbar-toggle" @onclick="ToggleSidebar">
-                        <i class="bi @(_sidebarCollapsed ? "bi-list" : "bi-x-lg")"></i>
-                    </button>
-
+                    <div class="topbar-left" style="display: flex; align-items: center;">
+                        <button class="topbar-btn" @onclick="ToggleSidebar" title="Toggle Sidebar">
+                            <i class="bi bi-list"></i>
+                        </button>
+                        <a href="/about" style="color: var(--text-current); text-decoration: none; margin-left: 15px; font-size: 0.9rem; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">About</a>
+                        <a href="/support" style="color: var(--text-current); text-decoration: none; margin-left: 15px; font-size: 0.9rem; opacity: 0.8; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">Support</a>
+                    </div>
                     <div class="topbar-right">
                         <!-- Theme Toggle -->
                         <button class="topbar-btn" @onclick="ToggleTheme" title="@(ThemeService.IsDarkMode ? "Switch to Light" : "Switch to Dark")">

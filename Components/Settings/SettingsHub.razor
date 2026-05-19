@@ -25,6 +25,9 @@
         <button class="settings-tab @(_activeTab == "account" ? "active" : "")" @onclick='() => SetTab("account")'>
             <i class="bi bi-person"></i> Account
         </button>
+        <button class="settings-tab @(_activeTab == "sessions" ? "active" : "")" @onclick='() => SetTab("sessions")'>
+            <i class="bi bi-shield-lock"></i> Sessions
+        </button>
     </div>
 
     <!-- Theme Tab -->
@@ -50,10 +53,30 @@
             <AccountPanel />
         </div>
     }
+
+    <!-- Sessions Tab -->
+    @if (_activeTab == "sessions")
+    {
+        <div class="settings-section">
+            <BASTION.Components.Auth.SessionMonitor />
+        </div>
+    }
 </div>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "tab")]
+    public string? RequestedTab { get; set; }
+
     private string _activeTab = "theme";
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(RequestedTab))
+        {
+            _activeTab = RequestedTab;
+        }
+    }
 
     private void SetTab(string tab)
     {

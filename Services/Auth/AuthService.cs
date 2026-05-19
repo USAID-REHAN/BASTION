@@ -12,7 +12,6 @@ namespace BASTION.Services.Auth;
 public class AuthService : IDisposable
 {
     private readonly BastionDbContext _dbContext;
-    private static readonly List<SessionInfo> _sessions = new();
     private UserAccount? _currentUser;
     public event Action? OnAuthStateChanged;
     public static event Action<string>? OnSessionRevoked;
@@ -104,14 +103,15 @@ public class AuthService : IDisposable
         _currentUser = user;
         _dbContext.SaveChanges();
 
-        _sessions.Add(new SessionInfo
+        _dbContext.UserSessions.Add(new UserSession
         {
-            UserEmail = email,
+            Email = email,
             Device = "Web Browser",
             Location = user.City ?? "Unknown",
             LoginTime = DateTime.UtcNow,
-            IsActive = true
+            IsRevoked = false
         });
+        _dbContext.SaveChanges();
 
         OnAuthStateChanged?.Invoke();
         return (true, "Welcome back, " + user.FullName + "!");
@@ -121,8 +121,15 @@ public class AuthService : IDisposable
     {
         if (_currentUser != null)
         {
-            var session = _sessions.LastOrDefault(s => s.UserEmail == _currentUser.Email && s.IsActive);
-            if (session != null) session.IsActive = false;
+            var session = _dbContext.UserSessions
+                .OrderByDescending(s => s.LoginTime)
+                .FirstOrDefault(s => s.Email == _currentUser.Email && !s.IsRevoked);
+                
+            if (session != null)
+            {
+                session.IsRevoked = true;
+                _dbContext.SaveChanges();
+            }
         }
         _currentUser = null;
         OnAuthStateChanged?.Invoke();
@@ -141,18 +148,48 @@ public class AuthService : IDisposable
     public List<SessionInfo> GetActiveSessions()
     {
         if (_currentUser == null) return new();
-        return _sessions.Where(s => s.UserEmail == _currentUser.Email).OrderByDescending(s => s.LoginTime).ToList();
+        return _dbContext.UserSessions
+            .Where(s => s.Email == _currentUser.Email && !s.IsRevoked)
+            .OrderByDescending(s => s.LoginTime)
+            .Select(s => new SessionInfo
+            {
+                UserEmail = s.Email,
+                Device = s.Device,
+                Location = s.Location,
+                LoginTime = s.LoginTime,
+                IsActive = !s.IsRevoked
+            })
+            .ToList();
     }
 
     public List<SessionInfo> GetAllSessions()
     {
-        return _sessions.OrderByDescending(s => s.LoginTime).ToList();
+        return _dbContext.UserSessions
+            .OrderByDescending(s => s.LoginTime)
+            .Select(s => new SessionInfo
+            {
+                UserEmail = s.Email,
+                Device = s.Device,
+                Location = s.Location,
+                LoginTime = s.LoginTime,
+                IsActive = !s.IsRevoked
+            })
+            .ToList();
     }
 
     public void RevokeSession(SessionInfo session)
     {
         var user = _dbContext.Users.FirstOrDefault(u => u.Email == session.UserEmail);
         if (user != null && user.Role == "Admin") return; // Cannot revoke admin sessions
+
+        var dbSession = _dbContext.UserSessions
+            .FirstOrDefault(s => s.Email == session.UserEmail && s.LoginTime == session.LoginTime);
+            
+        if (dbSession != null)
+        {
+            dbSession.IsRevoked = true;
+            _dbContext.SaveChanges();
+        }
 
         session.IsActive = false;
         OnSessionRevoked?.Invoke(session.UserEmail);

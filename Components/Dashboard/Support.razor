@@ -1,0 +1,48 @@
+@page "/support"
+@rendermode InteractiveServer
+
+<PageTitle>BASTION — Support</PageTitle>
+
+<div class="home-dashboard">
+    <div class="home-header">
+        <div class="home-greeting">
+            <h1>Support Center</h1>
+            <p>How can we help you today?</p>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div class="glass-card" style="padding: 20px; text-align: center;">
+            <div style="font-size: 2rem; color: var(--cyber-primary); margin-bottom: 10px;"><i class="bi bi-chat-dots"></i></div>
+            <h3 style="color: #ffffff;">Live Chat</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Talk to our security experts in real-time.</p>
+            <button class="btn-action btn-promote" style="margin-top: 10px;">Start Chat</button>
+        </div>
+        <div class="glass-card" style="padding: 20px; text-align: center;">
+            <div style="font-size: 2rem; color: var(--success); margin-bottom: 10px;"><i class="bi bi-ticket-perforated"></i></div>
+            <h3 style="color: #ffffff;">Support Tickets</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Open a ticket for complex issues.</p>
+            <button class="btn-action btn-promote" style="margin-top: 10px;">Create Ticket</button>
+        </div>
+        <div class="glass-card" style="padding: 20px; text-align: center;">
+            <div style="font-size: 2rem; color: var(--hacker-primary); margin-bottom: 10px;"><i class="bi bi-journal-text"></i></div>
+            <h3 style="color: #ffffff;">Documentation</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Read guides and FAQs.</p>
+            <button class="btn-action btn-promote" style="margin-top: 10px;">View Docs</button>
+        </div>
+    </div>
+
+    <div class="glass-card" style="padding: 20px;">
+        <h2 style="color: #ffffff; margin-bottom: 16px;">Frequently Asked Questions</h2>
+        <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div>
+                <div style="font-weight: 600; color: #ffffff;">How do I reset my password?</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">You can reset your password in the Account section of Settings.</div>
+            </div>
+            <div>
+                <div style="font-weight: 600; color: #ffffff;">Is my data safe?</div>
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Yes, BASTION uses local SQLite storage and does not send your data to external servers unless explicitly requested.</div>
+            </div>
+        </div>
+    </div>
+</div>

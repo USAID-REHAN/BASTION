@@ -3,6 +3,7 @@
 @inject BASTION.Services.Auth.AuthService AuthService
 @inject NavigationManager Navigation
 @inject BASTION.Services.Gamification.XpService XpService
+@inject BASTION.Data.BastionDbContext DbContext
 
 <PageTitle>BASTION — HackerLab</PageTitle>
 
@@ -40,7 +41,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 01</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Password & Auth Security") || XpService.Badges.Contains("Domain 01"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
 
@@ -54,7 +62,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 02</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Network & WiFi Safety") || XpService.Badges.Contains("Domain 02"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
 
@@ -68,7 +83,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 03</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Social Engineering") || XpService.Badges.Contains("Domain 03"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
 
@@ -82,7 +104,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 04</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Data Privacy") || XpService.Badges.Contains("Domain 04"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
 
@@ -96,7 +125,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 05</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Malware Defense") || XpService.Badges.Contains("Domain 05"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
             </div>
@@ -170,7 +206,7 @@
                     <div class="hl-rank-list">
                         @foreach (var rank in new[] { "CIVILIAN", "SCRIPT KIDDIE", "WHITE HAT ANALYST", "ETHICAL HACKER", "CYBER GUARDIAN" })
                         {
-                            var isCurrent = XpService.CurrentRank.Equals(rank, StringComparison.OrdinalIgnoreCase) || rank == "CYBER GUARDIAN";
+                            var isCurrent = XpService.CurrentRank.Equals(rank, StringComparison.OrdinalIgnoreCase);
                             <div class="hl-rank-item @(isCurrent ? "active" : "")">
                                 <span>@rank</span>
                                 @if (isCurrent)
@@ -317,11 +353,23 @@
     
     private bool _showKnowledgeModal = false;
     private string _knowledgeTitle = "";
+    private List<string> _acknowledgedTopics = new();
 
     protected override void OnInitialized()
     {
         if (!AuthService.IsAuthenticated) Navigation.NavigateTo("/login");
         XpService.OnXpChanged += StateHasChanged;
+        
+        // Load XP from DB
+        var userEmail = AuthService.CurrentUser?.Email;
+        if (!string.IsNullOrEmpty(userEmail))
+        {
+            var user = DbContext.Users.FirstOrDefault(u => u.Email == userEmail);
+            if (user != null)
+            {
+                XpService.SetXp(user.CurrentXp);
+            }
+        }
     }
     
     public void Dispose()
@@ -344,6 +392,25 @@
     private void CloseKnowledge()
     {
         _showKnowledgeModal = false;
+        
+        if (!_acknowledgedTopics.Contains(_knowledgeTitle))
+        {
+            _acknowledgedTopics.Add(_knowledgeTitle);
+            XpService.AddXp(50); // Give 50 XP
+            
+            // Save to DB
+            var userEmail = AuthService.CurrentUser?.Email;
+            if (!string.IsNullOrEmpty(userEmail))
+            {
+                var user = DbContext.Users.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    user.CurrentXp = XpService.CurrentXp;
+                    user.CurrentRank = XpService.CurrentRank;
+                    DbContext.SaveChanges();
+                }
+            }
+        }
     }
 
     private string GetKnowledgeIcon(string title)
@@ -372,6 +439,20 @@
         _lastBadge = result.Badge;
         XpService.AddXp(result.Xp);
         if (!string.IsNullOrEmpty(result.Badge)) XpService.UnlockBadge(result.Badge);
+        
+        // Save to DB
+        var userEmail = AuthService.CurrentUser?.Email;
+        if (!string.IsNullOrEmpty(userEmail))
+        {
+            var user = DbContext.Users.FirstOrDefault(u => u.Email == userEmail);
+            if (user != null)
+            {
+                user.CurrentXp = XpService.CurrentXp;
+                user.CurrentRank = XpService.CurrentRank;
+                DbContext.SaveChanges();
+            }
+        }
+        
         _currentState = State.Debrief;
     }
 }

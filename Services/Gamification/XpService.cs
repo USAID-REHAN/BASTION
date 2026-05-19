@@ -14,6 +14,12 @@ public class XpService
         OnXpChanged?.Invoke();
     }
 
+    public void SetXp(int xp)
+    {
+        CurrentXp = xp;
+        OnXpChanged?.Invoke();
+    }
+
     public void UnlockBadge(string badgeName)
     {
         if (!Badges.Contains(badgeName))
@@ -23,7 +29,7 @@ public class XpService
         }
     }
 
-    private string GetRank(int xp)
+    public string GetRank(int xp)
     {
         if (xp >= 1000) return "Cyber Guardian";
         if (xp >= 600) return "Ethical Hacker";

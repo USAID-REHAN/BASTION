@@ -123,9 +123,6 @@
                         <thead>
                             <tr>
                                 <th>User</th>
-                                <th>Device</th>
-                                <th>Location</th>
-                                <th>Login Time</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -133,11 +130,9 @@
                         <tbody>
                             @foreach (var session in _sessions)
                             {
-                                <tr>
+                                var sessionKey = session.UserEmail + session.LoginTime.Ticks;
+                                <tr @onclick="() => ToggleSessionExpand(sessionKey)" style="cursor: pointer;">
                                     <td>@session.UserEmail</td>
-                                    <td>@session.Device</td>
-                                    <td>@session.Location</td>
-                                    <td>@session.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
                                     <td>
                                         @if (session.IsActive)
                                         {
@@ -155,18 +150,27 @@
                                             var isUserAdmin = user?.Role == "Admin";
                                             @if (!isUserAdmin)
                                             {
-                                                <button class="btn-action btn-ban" @onclick="() => RevokeSession(session)">
+                                                <button class="btn-action btn-ban" @onclick="() => RevokeSession(session)" @onclick:stopPropagation>
                                                     Revoke
                                                 </button>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted" style="font-size: 0.8rem;">Protected</span>
                                             }
                                         }
                                     </td>
                                 </tr>
+                                @if (_expandedSessionId == sessionKey)
+                                {
+                                    <tr class="expanded-row" style="background: rgba(255,255,255,0.01);">
+                                        <td colspan="3">
+                                            <div style="padding: 12px; display: flex; gap: 24px;">
+                                                <div><strong style="color: var(--text-muted-dark);">Device:</strong> <span style="color: #ffffff;">@session.Device</span></div>
+                                                <div><strong style="color: var(--text-muted-dark);">Location:</strong> <span style="color: #ffffff;">@session.Location</span></div>
+                                                <div><strong style="color: var(--text-muted-dark);">Login Time:</strong> <span style="color: #ffffff;">@session.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")</span></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
                             }
+
                         </tbody>
                     </table>
                 </div>
@@ -275,6 +279,7 @@
 
 @code {
     private string _activeTab = "users";
+    private string? _expandedSessionId;
     private List<BASTION.Models.UserAccount> _users = new();
     private List<BASTION.Services.Auth.SessionInfo> _sessions = new();
     private Dictionary<string, int> _analytics = new();
@@ -298,6 +303,14 @@
     private void SetTab(string tab)
     {
         _activeTab = tab;
+    }
+
+    private void ToggleSessionExpand(string sessionKey)
+    {
+        if (_expandedSessionId == sessionKey)
+            _expandedSessionId = null;
+        else
+            _expandedSessionId = sessionKey;
     }
 
     private void RevokeSession(BASTION.Services.Auth.SessionInfo session)

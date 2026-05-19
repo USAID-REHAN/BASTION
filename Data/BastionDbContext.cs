@@ -33,6 +33,7 @@ public class BastionDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

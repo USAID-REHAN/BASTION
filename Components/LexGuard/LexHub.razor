@@ -540,6 +540,7 @@
             .Take(50)
             .ToList();
         _historyCount = _historyList.Count;
+        await Task.CompletedTask;
     }
 
     private void ViewHistoricalAnalysis(LexGuardAnalysis record)

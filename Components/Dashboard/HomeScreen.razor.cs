@@ -15,9 +15,12 @@ namespace BASTION.Components.Dashboard
         [Inject] public AuthService AuthService { get; set; } = default!;
         [Inject] public NavigationManager Navigation { get; set; } = default!;
         [Inject] public IJSRuntime JS { get; set; } = default!;
+        [Inject] public BASTION.Services.Gamification.XpService XpService { get; set; } = default!;
+        [Inject] public BASTION.Data.BastionDbContext DbContext { get; set; } = default!;
 
         protected int _activeModules;
         protected int _scansCompleted;
+        protected int _protectionScore = 20;
         protected string _userRank = "Civilian";
         protected List<ActivityItem> _activities = new();
         protected bool _gaugeAnimated;
@@ -31,14 +34,37 @@ namespace BASTION.Components.Dashboard
             }
 
             _activeModules = Modules.Count(m => m.Name != "GateKeeper" && m.Name != "Dashboard");
-            _scansCompleted = 0;
+            
+            var userEmail = AuthService.CurrentUser?.Email ?? "";
+            _scansCompleted = DbContext.AuditLogs.Count(l => l.Email == userEmail && (l.Action.Contains("Scan") || l.Action.Contains("Audit")));
 
-            _activities = new List<ActivityItem>
+            _protectionScore = 20;
+            if (AuthService.CurrentUser != null)
             {
-                new() { Text = "Signed in successfully", Color = "var(--success)", Time = "Just now" },
-                new() { Text = "Account created on BASTION", Color = "var(--info)", Time = DateTime.Now.ToString("MMM dd") },
-                new() { Text = "Welcome to your Digital Fortress!", Color = "var(--home-primary)", Time = DateTime.Now.ToString("MMM dd") }
-            };
+                _protectionScore += Math.Min(50, XpService.CurrentXp / 10);
+                if (AuthService.CurrentUser.MfaEnabled) _protectionScore += 30;
+            }
+
+            _userRank = AuthService.IsAdmin ? "Admin" : XpService.CurrentRank;
+
+            var logs = DbContext.AuditLogs
+                .Where(l => l.Email == userEmail)
+                .OrderByDescending(l => l.Timestamp)
+                .Take(10)
+                .ToList();
+
+            _activities = logs.Select(l => new ActivityItem
+            {
+                Text = l.Action,
+                Color = l.Action.Contains("Scan") || l.Action.Contains("Audit") ? "var(--success)" :
+                        l.Action.Contains("Login") ? "var(--info)" : "var(--home-primary)",
+                Time = l.Timestamp.ToString("MMM dd")
+            }).ToList();
+
+            if (_activities.Count == 0)
+            {
+                _activities.Add(new ActivityItem { Text = "Welcome to your Digital Fortress!", Color = "var(--home-primary)", Time = "Just now" });
+            }
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -46,11 +72,11 @@ namespace BASTION.Components.Dashboard
             if (firstRender && AuthService.IsAuthenticated && !_gaugeAnimated)
             {
                 _gaugeAnimated = true;
+                StateHasChanged(); // Trigger re-render for CSS transition
                 try
                 {
                     await JS.InvokeVoidAsync("bastionHome.startClock", "dashboard-clock");
-                    await JS.InvokeVoidAsync("bastionHome.animateGauge", "score-gauge-ring", 25);
-                    await JS.InvokeVoidAsync("bastionAnimate.countUp", "score-value", 25, 1500);
+                    await JS.InvokeVoidAsync("bastionAnimate.countUp", "score-value", _protectionScore, 1500);
                 }
                 catch { /* JS not ready */ }
             }

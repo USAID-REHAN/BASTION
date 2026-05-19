@@ -33,3 +33,14 @@ public class Notification
     public bool IsRead { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
+
+public class UserSession
+{
+    public int Id { get; set; }
+    [Required]
+    public string Email { get; set; } = string.Empty; // FK to UserAccount
+    public string Device { get; set; } = string.Empty;
+    public string Location { get; set; } = string.Empty;
+    public DateTime LoginTime { get; set; } = DateTime.UtcNow;
+    public bool IsRevoked { get; set; } = false;
+}
