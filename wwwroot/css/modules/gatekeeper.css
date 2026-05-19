@@ -146,6 +146,15 @@
     border-color: #E2E8F0;
 }
 
+.bastion-light .btn-gate-outline {
+    border-color: #CBD5E1;
+    color: #0F172A;
+}
+
+.bastion-light .btn-gate-outline:hover {
+    background: rgba(15, 23, 42, 0.05);
+}
+
 .bastion-light .gate-logo h1 {
     background: linear-gradient(135deg, #0F172A, #334155);
     -webkit-background-clip: text;
