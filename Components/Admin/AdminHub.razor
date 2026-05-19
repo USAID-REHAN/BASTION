@@ -1,0 +1,569 @@
+@page "/admin"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@rendermode InteractiveServer
+@inject BASTION.Services.Auth.AdminService AdminService
+@inject BASTION.Services.Auth.AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>BASTION — Admin Portal</PageTitle>
+
+<div class="admin-page">
+    <div class="admin-header">
+        <h1><i class="bi bi-shield-lock" style="color: var(--gate-primary);"></i> Admin Portal</h1>
+        <p>Manage users, view analytics, and configure the system</p>
+    </div>
+
+    <!-- Admin Banner -->
+    <div class="admin-banner">
+        <i class="bi bi-exclamation-triangle-fill"></i> [ADMIN MODE] You are viewing restricted platform data.
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+        <button class="admin-tab @(_activeTab == "users" ? "active" : "")" @onclick='() => SetTab("users")'>
+            <i class="bi bi-people"></i> User Management
+        </button>
+        <button class="admin-tab @(_activeTab == "sessions" ? "active" : "")" @onclick='() => SetTab("sessions")'>
+            <i class="bi bi-broadcast"></i> Active Sessions
+        </button>
+        <button class="admin-tab @(_activeTab == "analytics" ? "active" : "")" @onclick='() => SetTab("analytics")'>
+            <i class="bi bi-graph-up"></i> Analytics
+        </button>
+        <button class="admin-tab @(_activeTab == "config" ? "active" : "")" @onclick='() => SetTab("config")'>
+            <i class="bi bi-sliders"></i> Configuration
+        </button>
+        <button class="admin-tab @(_activeTab == "audit" ? "active" : "")" @onclick='() => SetTab("audit")'>
+            <i class="bi bi-journal-text"></i> Audit Log
+        </button>
+    </div>
+
+    <!-- Users Tab -->
+    @if (_activeTab == "users")
+    {
+        <div class="admin-section">
+            <div class="admin-card">
+                <div class="admin-card-title">Registered Users</div>
+                <div class="admin-card-desc">Manage user roles and access</div>
+
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in _users)
+                            {
+                                <tr>
+                                    <td>@user.FullName</td>
+                                    <td>@user.Email</td>
+                                    <td>
+                                        <span class="badge-bastion @(user.Role == "Admin" ? "badge-caution" : "badge-info")">
+                                            @user.Role
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (user.IsLockedOut)
+                                        {
+                                            <span class="badge-bastion badge-danger">Banned</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge-bastion badge-safe">Active</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            @if (user.Role != "Admin")
+                                            {
+                                                <button class="btn-action btn-promote" @onclick="() => PromoteUser(user.Email)">
+                                                    Promote
+                                                </button>
+                                            }
+                                            else if (user.Email != "admin@bastion.app")
+                                            {
+                                                <button class="btn-action btn-demote" @onclick="() => DemoteUser(user.Email)">
+                                                    Demote
+                                                </button>
+                                            }
+
+                                            @if (user.Email != "admin@bastion.app")
+                                            {
+                                                <button class="btn-action @(user.IsLockedOut ? "btn-unban" : "btn-ban")" 
+                                                        @onclick="() => ToggleLock(user.Email)">
+                                                    @(user.IsLockedOut ? "Unban" : "Ban")
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Sessions Tab -->
+    @if (_activeTab == "sessions")
+    {
+        <div class="admin-section">
+            <div class="admin-card">
+                <div class="admin-card-title">Active Sessions</div>
+                <div class="admin-card-desc">Manage all active user sessions across the platform</div>
+
+                <div class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var session in _sessions)
+                            {
+                                var sessionKey = session.UserEmail + session.LoginTime.Ticks;
+                                <tr @onclick="() => ToggleSessionExpand(sessionKey)" style="cursor: pointer;">
+                                    <td>@session.UserEmail</td>
+                                    <td>
+                                        @if (session.IsActive)
+                                        {
+                                            <span class="badge-bastion badge-safe">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge-bastion badge-danger">Revoked</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (session.IsActive)
+                                        {
+                                            var user = _users.FirstOrDefault(u => u.Email == session.UserEmail);
+                                            var isUserAdmin = user?.Role == "Admin";
+                                            @if (!isUserAdmin)
+                                            {
+                                                <button class="btn-action btn-ban" @onclick="() => RevokeSession(session)" @onclick:stopPropagation>
+                                                    Revoke
+                                                </button>
+                                            }
+                                        }
+                                    </td>
+                                </tr>
+                                @if (_expandedSessionId == sessionKey)
+                                {
+                                    <tr class="expanded-row" style="background: rgba(255,255,255,0.01);">
+                                        <td colspan="3">
+                                            <div style="padding: 12px; display: flex; gap: 24px;">
+                                                <div><strong style="color: var(--text-muted-dark);">Device:</strong> <span style="color: #ffffff;">@session.Device</span></div>
+                                                <div><strong style="color: var(--text-muted-dark);">Location:</strong> <span style="color: #ffffff;">@session.Location</span></div>
+                                                <div><strong style="color: var(--text-muted-dark);">Login Time:</strong> <span style="color: #ffffff;">@session.LoginTime.ToString("yyyy-MM-dd HH:mm:ss")</span></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Analytics Tab -->
+    @if (_activeTab == "analytics")
+    {
+        <div class="admin-section">
+            <div class="analytics-grid">
+                @foreach (var stat in _analytics)
+                {
+                    <div class="analytics-card">
+                        <div class="analytics-value">@stat.Value</div>
+                        <div class="analytics-label">@stat.Key</div>
+                    </div>
+                }
+            </div>
+
+            <div class="admin-card" style="margin-top: 20px;">
+                <div class="admin-card-title">System Health</div>
+                <div class="admin-card-desc">Real-time status of BASTION services</div>
+                
+                <div style="display: grid; gap: 10px; margin-top: 15px;">
+                    <div class="status-row">
+                        <span>Authentication Service</span>
+                        <span class="status-indicator online">ONLINE</span>
+                    </div>
+                    <div class="status-row">
+                        <span>Database (SQLite)</span>
+                        <span class="status-indicator online">ONLINE</span>
+                    </div>
+                    <div class="status-row">
+                        <span>Groq AI API</span>
+                        <span class="status-indicator online">ONLINE</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Config Tab -->
+    @if (_activeTab == "config")
+    {
+        <div class="admin-section">
+            <div class="admin-card">
+                <div class="admin-card-title">System Configuration</div>
+                <div class="admin-card-desc">Global settings for the platform</div>
+
+                @foreach (var cfg in _config)
+                {
+                    <div class="config-row">
+                        <div class="config-info">
+                            <h4>@cfg.Key</h4>
+                            <p>Current value: @cfg.Value</p>
+                        </div>
+                        <div class="config-action">
+                            @if (cfg.Value == "True" || cfg.Value == "False")
+                            {
+                                <label class="toggle-switch">
+                                    <input type="checkbox" checked="@(cfg.Value == "True")" 
+                                           @onchange='(e) => UpdateConfig(cfg.Key, e.Value?.ToString() == "True" ? "True" : "False")' />
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            }
+                            else
+                            {
+                                <input type="text" class="gate-input" style="max-width: 150px;" 
+                                       value="@cfg.Value" 
+                                       @onchange='(e) => UpdateConfig(cfg.Key, e.Value?.ToString() ?? "")' />
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Audit Log Tab -->
+    @if (_activeTab == "audit")
+    {
+        <div class="admin-section">
+            <div class="admin-card">
+                <div class="admin-card-title">Immutable Audit Log</div>
+                <div class="admin-card-desc">History of critical administrative actions</div>
+
+                <div class="audit-list">
+                    @foreach (var log in _logs)
+                    {
+                        <div class="audit-item">
+                            <div class="audit-header">
+                                <span class="audit-action">@log.Action</span>
+                                <span class="audit-time">@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</span>
+                            </div>
+                            <div class="audit-details">@log.Details</div>
+                            <div class="audit-user">By: @(log.Email ?? "System")</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string _activeTab = "users";
+    private string? _expandedSessionId;
+    private List<BASTION.Models.UserAccount> _users = new();
+    private List<BASTION.Services.Auth.SessionInfo> _sessions = new();
+    private Dictionary<string, int> _analytics = new();
+    private Dictionary<string, string> _config = new();
+    private List<BASTION.Models.AuditLog> _logs = new();
+
+    protected override void OnInitialized()
+    {
+        RefreshData();
+    }
+
+    private void RefreshData()
+    {
+        _users = AdminService.GetAllUsers();
+        _sessions = AuthService.GetAllSessions();
+        _analytics = AdminService.GetPlatformAnalytics();
+        _config = AdminService.GetSystemConfig();
+        _logs = AdminService.GetAuditLogs();
+    }
+
+    private void SetTab(string tab)
+    {
+        _activeTab = tab;
+    }
+
+    private void ToggleSessionExpand(string sessionKey)
+    {
+        if (_expandedSessionId == sessionKey)
+            _expandedSessionId = null;
+        else
+            _expandedSessionId = sessionKey;
+    }
+
+    private void RevokeSession(BASTION.Services.Auth.SessionInfo session)
+    {
+        AuthService.RevokeSession(session);
+        RefreshData();
+    }
+
+    private void PromoteUser(string email)
+    {
+        AdminService.UpdateUserRole(email, "Admin");
+        RefreshData();
+    }
+
+    private void DemoteUser(string email)
+    {
+        AdminService.UpdateUserRole(email, "User");
+        RefreshData();
+    }
+
+    private void ToggleLock(string email)
+    {
+        AdminService.ToggleUserLock(email);
+        RefreshData();
+    }
+
+    private void UpdateConfig(string key, string value)
+    {
+        AdminService.UpdateSystemConfig(key, value);
+        RefreshData();
+    }
+}
+
+<style>
+    .admin-page {
+        padding: 20px;
+    }
+    .admin-header h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    .admin-header p {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+    .admin-banner {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid #f59e0b;
+        color: #f59e0b;
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-top: 15px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .admin-tabs {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+        border-bottom: 1px solid var(--border-current);
+        padding-bottom: 10px;
+    }
+    .admin-tab {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        padding: 8px 16px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+        border-radius: 4px;
+    }
+    .admin-tab:hover {
+        color: var(--text-primary);
+        background: rgba(255,255,255,0.05);
+    }
+    .admin-tab.active {
+        color: var(--gate-primary);
+        background: rgba(220, 38, 38, 0.1);
+    }
+    .admin-section {
+        margin-top: 20px;
+    }
+    .admin-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    .admin-card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    .admin-card-desc {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin-bottom: 20px;
+    }
+    .admin-table-container {
+        overflow-x: auto;
+    }
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    .admin-table th, .admin-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #334155;
+    }
+    .admin-table th {
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+    .btn-action {
+        padding: 4px 8px;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-promote { background: #059669; color: white; }
+    .btn-demote { background: #f59e0b; color: white; }
+    .btn-ban { background: #dc2626; color: white; }
+    .btn-unban { background: #3b82f6; color: white; }
+    
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    .analytics-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 20px;
+        text-align: center;
+    }
+    .analytics-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--gate-primary);
+    }
+    .analytics-label {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+        margin-top: 5px;
+    }
+    .status-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #334155;
+        font-size: 0.9rem;
+    }
+    .status-indicator.online {
+        color: #059669;
+        font-weight: 700;
+    }
+    .config-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 0;
+        border-bottom: 1px solid #334155;
+    }
+    .config-info h4 {
+        margin: 0;
+        font-size: 1rem;
+    }
+    .config-info p {
+        margin: 5px 0 0 0;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    .audit-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .audit-item {
+        background: #0f172a;
+        border-left: 4px solid var(--gate-primary);
+        padding: 15px;
+        border-radius: 0 4px 4px 0;
+    }
+    .audit-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+    }
+    .audit-action {
+        font-weight: 700;
+        color: var(--gate-primary);
+    }
+    .audit-time {
+        color: var(--text-muted);
+    }
+    .audit-details {
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+    .audit-user {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    /* ── Light Mode Overrides ── */
+    .bastion-light .admin-tab:hover {
+        color: var(--gate-primary);
+        background: rgba(0, 0, 0, 0.05);
+    }
+
+    .bastion-light .admin-card,
+    .bastion-light .analytics-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        color: #0F172A;
+    }
+    .bastion-light .analytics-label {
+        color: #475569;
+    }
+    .bastion-light .audit-item {
+        background: #f8fafc;
+        border-color: #e2e8f0;
+    }
+    .bastion-light .audit-user, 
+    .bastion-light .audit-time {
+        color: #475569;
+    }
+    .bastion-light .status-row,
+    .bastion-light .config-row,
+    .bastion-light .admin-table td,
+    .bastion-light .admin-table th {
+        border-bottom: 1px solid #e2e8f0;
+        color: #0F172A;
+    }
+    .bastion-light .config-info p,
+    .bastion-light .admin-card-desc,
+    .bastion-light .admin-header p {
+        color: #475569;
+    }
+</style>

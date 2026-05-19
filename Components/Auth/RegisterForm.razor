@@ -53,7 +53,7 @@
                 <!-- Step 1: Account Details -->
                 @if (_step == 1)
                 {
-                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px;">Account Details</h3>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #ffffff;">Account Details</h3>
 
                     <div class="gate-input-group">
                         <label>Full Name</label>
@@ -99,7 +99,7 @@
                 <!-- Step 2: Profile Setup -->
                 @if (_step == 2)
                 {
-                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px;">Profile Setup</h3>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #ffffff;">Profile Setup</h3>
 
                     <div class="gate-input-group">
                         <label>City (for localized scam feed)</label>
@@ -130,20 +130,20 @@
                 <!-- Step 3: Confirmation -->
                 @if (_step == 3)
                 {
-                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px;">Confirm & Create</h3>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #ffffff;">Confirm & Create</h3>
 
                     <div style="background: rgba(255,255,255,0.03); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
                             <span style="color: var(--text-muted-dark);">Name</span>
-                            <span>@_model.FullName</span>
+                            <span style="color: #ffffff;">@_model.FullName</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
                             <span style="color: var(--text-muted-dark);">Email</span>
-                            <span>@_model.Email</span>
+                            <span style="color: #ffffff;">@_model.Email</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
                             <span style="color: var(--text-muted-dark);">City</span>
-                            <span>@(string.IsNullOrEmpty(_model.City) ? "Not specified" : _model.City)</span>
+                            <span style="color: #ffffff;">@(string.IsNullOrEmpty(_model.City) ? "Not specified" : _model.City)</span>
                         </div>
                     </div>
 

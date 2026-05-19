@@ -3,6 +3,7 @@
 @inject BASTION.Services.Auth.AuthService AuthService
 @inject NavigationManager Navigation
 @inject BASTION.Services.Gamification.XpService XpService
+@inject BASTION.Data.BastionDbContext DbContext
 
 <PageTitle>BASTION — HackerLab</PageTitle>
 
@@ -40,7 +41,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 01</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Password & Auth Security") || XpService.Badges.Contains("Domain 01"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
 
@@ -54,7 +62,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 02</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Network & WiFi Safety") || XpService.Badges.Contains("Domain 02"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
 
@@ -68,7 +83,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 03</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Social Engineering") || XpService.Badges.Contains("Domain 03"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
 
@@ -82,7 +104,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 04</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Data Privacy") || XpService.Badges.Contains("Domain 04"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
 
@@ -96,7 +125,14 @@
                     <div class="hl-domain-subtitle">DOMAIN 05</div>
                     <div class="hl-domain-footer">
                         <span>Authorized</span>
-                        <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        @if (XpService.Badges.Contains("Malware Defense") || XpService.Badges.Contains("Domain 05"))
+                        {
+                            <span class="hl-badge-text"><i class="bi bi-trophy"></i> Badge Earned</span>
+                        }
+                        else
+                        {
+                            <span class="hl-badge-text" style="color: var(--text-muted); opacity: 0.5;"><i class="bi bi-trophy"></i> Not Earned</span>
+                        }
                     </div>
                 </div>
             </div>
@@ -110,6 +146,7 @@
                             <div class="hl-class-icon"><i class="bi bi-shield-check"></i></div>
                             <div class="hl-class-title">Social Engineering</div>
                             <div class="hl-class-desc">Understand the formula: Urgency + Authority = Vulnerability.</div>
+                            <div class="hl-class-link"><i class="bi bi-book"></i> STUDY TOPIC</div>
                         </div>
                         <div class="hl-class-card" @onclick='() => ShowKnowledge("Network Sniffing")'>
                             <div class="hl-class-icon"><i class="bi bi-wifi"></i></div>
@@ -121,11 +158,37 @@
                             <div class="hl-class-icon"><i class="bi bi-bug"></i></div>
                             <div class="hl-class-title">Zero Day Detection</div>
                             <div class="hl-class-desc">How heuristics identify threats without a signature.</div>
+                            <div class="hl-class-link"><i class="bi bi-book"></i> STUDY TOPIC</div>
                         </div>
                         <div class="hl-class-card" @onclick='() => ShowKnowledge("Physical Security")'>
                             <div class="hl-class-icon"><i class="bi bi-fingerprint"></i></div>
                             <div class="hl-class-title">Physical Security</div>
                             <div class="hl-class-desc">Tailgating and social hacking in physical zones.</div>
+                            <div class="hl-class-link"><i class="bi bi-book"></i> STUDY TOPIC</div>
+                        </div>
+                        <div class="hl-class-card" @onclick='() => ShowKnowledge("Phishing Simulation")'>
+                            <div class="hl-class-icon"><i class="bi bi-envelope-exclamation"></i></div>
+                            <div class="hl-class-title">Phishing Simulation</div>
+                            <div class="hl-class-desc">Learn to spot spoofed headers and urgent calls to action.</div>
+                            <div class="hl-class-link"><i class="bi bi-book"></i> STUDY TOPIC</div>
+                        </div>
+                        <div class="hl-class-card" @onclick='() => ShowKnowledge("Man-in-the-Middle")'>
+                            <div class="hl-class-icon"><i class="bi bi-reception-3"></i></div>
+                            <div class="hl-class-title">Man-in-the-Middle</div>
+                            <div class="hl-class-desc">Understand how attackers intercept data between you and the router.</div>
+                            <div class="hl-class-link"><i class="bi bi-book"></i> STUDY TOPIC</div>
+                        </div>
+                        <div class="hl-class-card" @onclick='() => ShowKnowledge("Password Brute Force")'>
+                            <div class="hl-class-icon"><i class="bi bi-key"></i></div>
+                            <div class="hl-class-title">Password Brute Force</div>
+                            <div class="hl-class-desc">How entropy and length protect against automated cracking.</div>
+                            <div class="hl-class-link"><i class="bi bi-book"></i> STUDY TOPIC</div>
+                        </div>
+                        <div class="hl-class-card" @onclick='() => ShowKnowledge("Social Media OSINT")'>
+                            <div class="hl-class-icon"><i class="bi bi-globe"></i></div>
+                            <div class="hl-class-title">Social Media OSINT</div>
+                            <div class="hl-class-desc">How oversharing helps attackers build a profile for spear phishing.</div>
+                            <div class="hl-class-link"><i class="bi bi-book"></i> STUDY TOPIC</div>
                         </div>
                     </div>
                 </div>
@@ -143,7 +206,7 @@
                     <div class="hl-rank-list">
                         @foreach (var rank in new[] { "CIVILIAN", "SCRIPT KIDDIE", "WHITE HAT ANALYST", "ETHICAL HACKER", "CYBER GUARDIAN" })
                         {
-                            var isCurrent = XpService.CurrentRank.Equals(rank, StringComparison.OrdinalIgnoreCase) || rank == "CYBER GUARDIAN";
+                            var isCurrent = XpService.CurrentRank.Equals(rank, StringComparison.OrdinalIgnoreCase);
                             <div class="hl-rank-item @(isCurrent ? "active" : "")">
                                 <span>@rank</span>
                                 @if (isCurrent)
@@ -235,6 +298,35 @@
                         <p>Defense:</p>
                         <p>Always shred sensitive documents. Never plug in unknown USB devices. Be aware of your surroundings when entering credentials in public.</p>
                     }
+                    else if (_knowledgeTitle == "Phishing Simulation")
+                    {
+                        <p>Phishing is a method of trying to gather personal information using deceptive emails and websites.</p>
+                        <p>What to look for:</p>
+                        <ul>
+                            <li><strong>Spoofed Headers:</strong> The email looks like it's from "Support" but the actual address is suspicious.</li>
+                            <li><strong>Urgent Tone:</strong> Demanding immediate action to prevent negative consequences.</li>
+                            <li><strong>Suspicious Links:</strong> Hovering reveals a URL that doesn't match the claimed destination.</li>
+                        </ul>
+                    }
+                    else if (_knowledgeTitle == "Man-in-the-Middle")
+                    {
+                        <p>A man-in-the-middle (MITM) attack is where the attacker secretly relays and possibly alters the communications between two parties who believe they are directly communicating with each other.</p>
+                        <p>Scenario:</p>
+                        <p>When you connect to a public WiFi, an attacker can position themselves between your device and the router, intercepting all unencrypted data.</p>
+                    }
+                    else if (_knowledgeTitle == "Password Brute Force")
+                    {
+                        <p>A brute-force attack consists of an attacker submitting many passwords or passphrases with the hope of eventually guessing correctly.</p>
+                        <p>Defense:</p>
+                        <p><strong>Entropy:</strong> Using a long, complex passphrase makes brute-forcing computationally infeasible.</p>
+                        <p><strong>Rate Limiting:</strong> Account lockout after a few failed attempts stops automated attacks.</p>
+                    }
+                    else if (_knowledgeTitle == "Social Media OSINT")
+                    {
+                        <p>Open Source Intelligence (OSINT) is data collected from publicly available sources to be used in an intelligence context.</p>
+                        <p>Risk:</p>
+                        <p>Oversharing on social media allows attackers to build a detailed profile of you, including your location, habits, and relationships, which can be used for highly targeted spear phishing.</p>
+                    }
                     
                     <div class="hl-analyst-note">
                         <div class="hl-analyst-icon"><i class="bi bi-book"></i></div>
@@ -261,11 +353,23 @@
     
     private bool _showKnowledgeModal = false;
     private string _knowledgeTitle = "";
+    private List<string> _acknowledgedTopics = new();
 
     protected override void OnInitialized()
     {
         if (!AuthService.IsAuthenticated) Navigation.NavigateTo("/login");
         XpService.OnXpChanged += StateHasChanged;
+        
+        // Load XP from DB
+        var userEmail = AuthService.CurrentUser?.Email;
+        if (!string.IsNullOrEmpty(userEmail))
+        {
+            var user = DbContext.Users.FirstOrDefault(u => u.Email == userEmail);
+            if (user != null)
+            {
+                XpService.SetXp(user.CurrentXp);
+            }
+        }
     }
     
     public void Dispose()
@@ -288,6 +392,25 @@
     private void CloseKnowledge()
     {
         _showKnowledgeModal = false;
+        
+        if (!_acknowledgedTopics.Contains(_knowledgeTitle))
+        {
+            _acknowledgedTopics.Add(_knowledgeTitle);
+            XpService.AddXp(50); // Give 50 XP
+            
+            // Save to DB
+            var userEmail = AuthService.CurrentUser?.Email;
+            if (!string.IsNullOrEmpty(userEmail))
+            {
+                var user = DbContext.Users.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    user.CurrentXp = XpService.CurrentXp;
+                    user.CurrentRank = XpService.CurrentRank;
+                    DbContext.SaveChanges();
+                }
+            }
+        }
     }
 
     private string GetKnowledgeIcon(string title)
@@ -316,6 +439,20 @@
         _lastBadge = result.Badge;
         XpService.AddXp(result.Xp);
         if (!string.IsNullOrEmpty(result.Badge)) XpService.UnlockBadge(result.Badge);
+        
+        // Save to DB
+        var userEmail = AuthService.CurrentUser?.Email;
+        if (!string.IsNullOrEmpty(userEmail))
+        {
+            var user = DbContext.Users.FirstOrDefault(u => u.Email == userEmail);
+            if (user != null)
+            {
+                user.CurrentXp = XpService.CurrentXp;
+                user.CurrentRank = XpService.CurrentRank;
+                DbContext.SaveChanges();
+            }
+        }
+        
         _currentState = State.Debrief;
     }
 }

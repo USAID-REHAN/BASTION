@@ -23,9 +23,9 @@
     @if (_currentProcess != null)
     {
         <div class="d-flex align-items-center mb-4">
-            <i class="bi @(_currentProcess.IsMalware ? "bi-bug-fill text-danger" : "bi-file-earmark-code text-info") fs-2 me-3"></i>
+            <i class="bi bi-file-earmark text-light fs-2 me-3"></i>
             <div>
-                <strong class="fs-5" style="color: @(_currentProcess.IsMalware ? "#ef4444" : "#e5e7eb")">@_currentProcess.Name</strong><br/>
+                <strong class="fs-5" style="color: #e5e7eb">@_currentProcess.Name</strong><br/>
                 <small class="text-muted">Behavior: @_currentProcess.Behavior</small>
             </div>
         </div>

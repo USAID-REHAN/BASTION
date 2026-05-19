@@ -24,6 +24,7 @@ builder.Services.AddRazorComponents()
 
 // ── Authentication ──
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<AdminService>();
 builder.Services.AddScoped<AuthenticationStateProvider, BastionAuthStateProvider>();
 builder.Services.AddAuthorizationCore();
 

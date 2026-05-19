@@ -81,6 +81,12 @@
 
 /* ── Light Mode Overrides ── */
 .bastion-light {
+    --bg-current: var(--bg-light);
+    --text-current: var(--text-dark);
+    --card-current: var(--card-light);
+    --surface-current: var(--surface-light);
+    --border-current: var(--border-light);
+    --text-muted: var(--text-muted-light);
     --glass-bg: #FFFFFF; /* Solid white for cards to contrast against background */
     --glass-border: rgba(0, 0, 0, 0.15); /* Stronger border for visibility */
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);

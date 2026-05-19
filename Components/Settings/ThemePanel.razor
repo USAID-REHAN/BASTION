@@ -1,9 +1,36 @@
-<!-- ThemePanel.razor — Light/dark toggle + color wheel (iro.js) + 8 preset swatches -->
+@inject BASTION.Services.Theme.ThemeService ThemeService
+@implements IDisposable
+
+<div class="settings-card">
+    <div class="settings-card-title">Appearance</div>
+    <div class="settings-card-desc">Choose between dark and light mode</div>
+
+    <div class="toggle-row">
+        <div class="toggle-info">
+            <h4><i class="bi bi-moon-stars"></i> Dark Mode</h4>
+            <p>Use dark colour palette (default)</p>
+        </div>
+        <label class="toggle-switch">
+            <input type="checkbox" checked="@ThemeService.IsDarkMode" @onchange="ToggleDarkMode" />
+            <span class="toggle-slider"></span>
+        </label>
+    </div>
+</div>
 
 @code {
-    // TODO: Light/dark mode toggle
-    // TODO: iro.js color wheel via JS Interop — HSL selection, real-time CSS var update
-    // TODO: 8 preset swatches for quick one-click selection
-    // Light Mode: selected color replaces default primary token
-    // Dark Mode: color saved but dark palette overrides until Light Mode activated
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += StateHasChanged;
+    }
+
+    private async Task ToggleDarkMode(ChangeEventArgs e)
+    {
+        var isDark = (bool)(e.Value ?? true);
+        await ThemeService.SetDarkMode(isDark);
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= StateHasChanged;
+    }
 }

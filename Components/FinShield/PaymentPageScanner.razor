@@ -461,6 +461,7 @@
         isDragging = false;
         // Drag-drop functionality would require JavaScript interop
         // Users can click to select files instead
+        await Task.CompletedTask;
     }
 
     private void HandleDragOver(DragEventArgs e)
