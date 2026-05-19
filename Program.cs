@@ -55,6 +55,7 @@ builder.Services.AddScoped<XpService>();
 builder.Services.AddScoped<DocumentAnalysisService>();
 builder.Services.AddScoped<PdfReportService>();
 builder.Services.AddScoped<BASTION.Services.Support.SupportAgentService>();
+builder.Services.AddScoped<BASTION.Services.Support.MarkdownParserService>();
 
 // ── Module Registrations (IModule) ──
 builder.Services.AddScoped<IModule, HomescreenModule>();        // Dashboard

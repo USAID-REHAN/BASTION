@@ -6,6 +6,7 @@
 @using Microsoft.EntityFrameworkCore
 @inject SupportAgentService AgentService
 @inject AuthService AuthService
+@inject BASTION.Services.Support.MarkdownParserService MarkdownParser
 @inject BASTION.Data.BastionDbContext DbContext
 @rendermode InteractiveServer
 
@@ -343,66 +344,7 @@
 
     private MarkupString ConvertMarkdownToHtml(string? markdown)
     {
-        if (string.IsNullOrEmpty(markdown)) return new MarkupString(string.Empty);
-        
-        var lines = markdown.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-        var parsedLines = new List<string>();
-        
-        foreach (var line in lines)
-        {
-            var currentLine = line;
-            
-            if (currentLine.StartsWith("#### "))
-            {
-                var headerText = System.Net.WebUtility.HtmlEncode(currentLine.Substring(5).Trim());
-                parsedLines.Add($"<strong style=\"font-size: 1.05rem; display: block; margin-top: 10px; margin-bottom: 4px; color: var(--text-current);\">{headerText}</strong>");
-                continue;
-            }
-            if (currentLine.StartsWith("### "))
-            {
-                var headerText = System.Net.WebUtility.HtmlEncode(currentLine.Substring(4).Trim());
-                parsedLines.Add($"<strong style=\"font-size: 1.15rem; display: block; margin-top: 14px; margin-bottom: 6px; color: var(--cyber-primary);\">{headerText}</strong>");
-                continue;
-            }
-            if (currentLine.StartsWith("## "))
-            {
-                var headerText = System.Net.WebUtility.HtmlEncode(currentLine.Substring(3).Trim());
-                parsedLines.Add($"<strong style=\"font-size: 1.3rem; display: block; margin-top: 18px; margin-bottom: 8px; color: var(--cyber-primary);\">{headerText}</strong>");
-                continue;
-            }
-            if (currentLine.StartsWith("# "))
-            {
-                var headerText = System.Net.WebUtility.HtmlEncode(currentLine.Substring(2).Trim());
-                parsedLines.Add($"<strong style=\"font-size: 1.5rem; display: block; margin-top: 22px; margin-bottom: 10px; color: var(--cyber-primary);\">{headerText}</strong>");
-                continue;
-            }
-            
-            currentLine = System.Net.WebUtility.HtmlEncode(currentLine);
-            
-            while (currentLine.Contains("**"))
-            {
-                int first = currentLine.IndexOf("**");
-                int second = currentLine.IndexOf("**", first + 2);
-                if (second == -1) break;
-                
-                var boldText = currentLine.Substring(first + 2, second - (first + 2));
-                currentLine = currentLine.Remove(first, second + 2 - first);
-                currentLine = currentLine.Insert(first, $"<strong>{boldText}</strong>");
-            }
-            
-            if (currentLine.StartsWith("- "))
-            {
-                currentLine = "• " + currentLine.Substring(2);
-            }
-            else if (currentLine.StartsWith("* "))
-            {
-                currentLine = "• " + currentLine.Substring(2);
-            }
-            
-            parsedLines.Add(currentLine);
-        }
-        
-        return new MarkupString(string.Join("<br />", parsedLines));
+        return MarkdownParser.Parse(markdown ?? string.Empty);
     }
 
     // Chat States
