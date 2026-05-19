@@ -38,5 +38,47 @@ window.bastionSound = {
         } catch (e) {
             console.log('BASTION: Audio not available', e);
         }
+    },
+
+    playBeep: function () {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            oscillator.frequency.setValueAtTime(1000, ctx.currentTime);
+            oscillator.type = 'triangle';
+
+            gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.0, ctx.currentTime + 0.4);
+
+            oscillator.start(ctx.currentTime);
+            oscillator.stop(ctx.currentTime + 0.4);
+        } catch (e) {
+            console.log('BASTION: Audio not available', e);
+        }
+    },
+
+    _bgm: null,
+
+    playBgm: function (src) {
+        try {
+            if (!this._bgm) {
+                this._bgm = new Audio();
+                this._bgm.loop = true;
+                this._bgm.volume = 0.4; // Low volume for background music
+            }
+            if (!src) {
+                this._bgm.pause();
+                return;
+            }
+            this._bgm.src = src;
+            this._bgm.play();
+        } catch (e) {
+            console.log('BASTION: Audio not available', e);
+        }
     }
 };

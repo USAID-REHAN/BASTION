@@ -23,7 +23,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // ── Authentication ──
-builder.Services.AddSingleton<AuthService>();
+builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<AuthenticationStateProvider, BastionAuthStateProvider>();
 builder.Services.AddAuthorizationCore();
 
@@ -70,7 +70,43 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<BastionDbContext>();
-    db.Database.EnsureCreated();
+    try
+    {
+        db.Database.EnsureCreated();
+
+        // Seed Admin User if not exists
+        if (!db.Users.Any(u => u.Email == "admin@bastion.app"))
+        {
+            db.Users.Add(new BASTION.Models.UserAccount
+            {
+                Email = "admin@bastion.app",
+                FullName = "BASTION Admin",
+                PasswordHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("Admin@123BASTION_SALT_2026"))),
+                Role = "Admin",
+                City = "Islamabad",
+                CreatedAt = DateTime.UtcNow,
+                MfaEnabled = false
+            });
+            db.SaveChanges();
+        }
+    }
+    catch (Exception ex) when (ex.Message.Contains("no such table", StringComparison.OrdinalIgnoreCase))
+    {
+        db.Database.EnsureDeleted();
+        db.Database.EnsureCreated();
+
+        db.Users.Add(new BASTION.Models.UserAccount
+        {
+            Email = "admin@bastion.app",
+            FullName = "BASTION Admin",
+            PasswordHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("Admin@123BASTION_SALT_2026"))),
+            Role = "Admin",
+            City = "Islamabad",
+            CreatedAt = DateTime.UtcNow,
+            MfaEnabled = false
+        });
+        db.SaveChanges();
+    }
 }
 
 // Configure the HTTP request pipeline.

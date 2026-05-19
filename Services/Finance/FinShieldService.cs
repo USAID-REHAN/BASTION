@@ -91,20 +91,20 @@ public class FinShieldService
         try
         {
             var apiKey = _configuration["GoogleSafeBrowsing:ApiKey"];
-            if (string.IsNullOrEmpty(apiKey) || apiKey.Contains("YOUR_"))
+            bool isMock = string.IsNullOrEmpty(apiKey) || apiKey.Contains("YOUR_");
+
+            if (!isMock)
             {
-                // API key not configured, skip this check
-                return result;
+                // Simulated API call - in production, implement actual API integration
+                // Real implementation would POST to: https://safebrowsing.googleapis.com/v4/threatMatches:find
+                await Task.Delay(300); // Simulate API latency
             }
 
-            // Simulated API call - in production, implement actual API integration
-            // Real implementation would POST to: https://safebrowsing.googleapis.com/v4/threatMatches:find
-            await Task.Delay(300); // Simulate API latency
-
-            if (url.Contains("malware") || url.Contains("phishing"))
+            var u = url.ToLower().Trim();
+            if (u.Contains("malware") || u.Contains("phishing") || u.Contains("login") || u.Contains("verify") || u.Contains("secure") || u.Contains("account") || u.Contains("banking") || u.Contains("urgent"))
             {
                 result.IsMalicious = true;
-                result.Threats.Add("Flagged as phishing/malware by Google");
+                result.Threats.Add(isMock ? "Flagged as phishing/malware (Simulated Google Safe Browsing)" : "Flagged as phishing/malware by Google");
             }
         }
         catch (Exception ex)
@@ -126,20 +126,48 @@ public class FinShieldService
         try
         {
             var apiKey = _configuration["URLScan:ApiKey"];
-            if (string.IsNullOrEmpty(apiKey) || apiKey.Contains("YOUR_"))
+            bool isMock = string.IsNullOrEmpty(apiKey) || apiKey.Contains("YOUR_");
+
+            if (!isMock)
             {
-                // API key not configured, skip this check
-                return result;
+                // Simulated API call - in production, implement actual URLScan.io integration
+                // Real implementation would POST to: https://urlscan.io/api/v1/scan/
+                await Task.Delay(400); // Simulate API latency
             }
 
-            // Simulated API call - in production, implement actual URLScan.io integration
-            // Real implementation would POST to: https://urlscan.io/api/v1/scan/
-            await Task.Delay(400); // Simulate API latency
+            var u = url.ToLower().Trim();
 
-            if (url.Contains("suspicious") || url.Contains("spam"))
+            // Extract host for reliable domain checks
+            string host = u;
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                host = uri.Host.ToLower().Trim();
+            }
+            else
+            {
+                var tempUrl = url;
+                if (!tempUrl.Contains("://"))
+                {
+                    tempUrl = "https://" + tempUrl;
+                }
+                if (Uri.TryCreate(tempUrl, UriKind.Absolute, out var tempUri))
+                {
+                    host = tempUri.Host.ToLower().Trim();
+                }
+            }
+
+            var trustedDomains = new[] { "google.com", "github.com", "microsoft.com", "apple.com", "amazon.com", "youtube.com", "wikipedia.org" };
+            var brands = new[] { "paypal", "amazon", "apple", "microsoft", "google", "netflix", "bank", "ebay" };
+
+            bool isTrustedDomain = trustedDomains.Any(d => host == d || host.EndsWith("." + d));
+            bool hasBrandImpersonation = brands.Any(b => host.Contains(b)) && !isTrustedDomain;
+            bool isIpBased = System.Text.RegularExpressions.Regex.IsMatch(host, @"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}");
+            bool isRiskyTld = u.EndsWith(".tk") || u.EndsWith(".ml") || u.EndsWith(".ga") || u.Contains(".xyz") || u.Contains(".top") || u.Contains(".click") || u.Contains(".work");
+
+            if (u.Contains("suspicious") || u.Contains("spam") || hasBrandImpersonation || isIpBased || isRiskyTld || u.Contains("urgent") || u.Contains("claim") || u.Contains("free"))
             {
                 result.IsSuspicious = true;
-                result.Issues.Add("URL matches known spam/phishing patterns");
+                result.Issues.Add(isMock ? "URL matches known spam/phishing patterns (Simulated URLScan.io)" : "URL matches known spam/phishing patterns");
             }
         }
         catch (Exception ex)
@@ -174,7 +202,12 @@ public class FinShieldService
             score += 20;
 
         // Check for IP-based URLs (potential spoofing)
-        if (url.Contains("://") && Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        var tempUrl = url;
+        if (!tempUrl.Contains("://"))
+        {
+            tempUrl = "https://" + tempUrl;
+        }
+        if (Uri.TryCreate(tempUrl, UriKind.Absolute, out var uri))
         {
             var host = uri.Host;
             if (System.Net.IPAddress.TryParse(host, out _))

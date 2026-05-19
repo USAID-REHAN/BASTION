@@ -23,10 +23,10 @@
     --text-muted-dark: #94A3B8;
 
     /* ── Light Mode Palette ── */
-    --bg-light: #F8FAFC;
-    --card-light: #FFFFFF;
-    --surface-light: #F1F5F9;
-    --border-light: rgba(0, 0, 0, 0.08);
+    --bg-light: #EBF2FA; /* Light Blue instead of white */
+    --card-light: #F4F8FC; /* Very light blue instead of white */
+    --surface-light: #DCE6F2; /* Ice blue surface */
+    --border-light: rgba(29, 78, 216, 0.15); /* Blue tinted border */
     --text-dark: #1E293B;
     --text-muted-light: #64748B;
 

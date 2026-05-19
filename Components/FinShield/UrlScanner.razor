@@ -1,3 +1,4 @@
+@inject BASTION.Services.Finance.FinShieldService FinShield
 
 <div class="url-scanner">
     <div class="scanner-card">
@@ -73,7 +74,7 @@
                 </div>
 
                 <div class="action-buttons">
-                    <button class="btn-secondary" @onclick="() => { result = null; errorMessage = null; }">
+                    <button class="btn-secondary" @onclick="() => { result = null; errorMessage = string.Empty; }">
                         Clear Results
                     </button>
                     <button class="btn-primary" @onclick="() => AddToBlockList(urlInput)">
@@ -449,98 +450,14 @@
         {
             await Task.Delay(1200);
 
-            var u = urlInput.ToLower().Trim();
-            var flags = new List<string>();
-            int score = 0;
-
-            // ── Trusted domains = instant LOW ──
-            var trustedDomains = new[] { "google.com", "github.com", "microsoft.com", "apple.com", "amazon.com", "youtube.com", "wikipedia.org" };
-            if (trustedDomains.Any(d => u.Contains(d)))
-            {
-                result = new ScamAnalysisResult
-                {
-                    ScamProbabilityScore = 5,
-                    Verdict = "🟢 Appears Safe",
-                    Flags = new List<string>()
-                };
-                scanTime = DateTime.Now;
-                return;
-            }
-
-            // ── No HTTPS ──
-            if (!u.StartsWith("https://"))
-            {
-                flags.Add("⚠️ No HTTPS — connection is not encrypted");
-                score += 30;
-            }
-
-            // ── IP address instead of domain ──
-            if (System.Text.RegularExpressions.Regex.IsMatch(u, @"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}"))
-            {
-                flags.Add("🔢 IP address used instead of domain name — major red flag");
-                score += 40;
-            }
-
-            // ── URL shorteners ──
-            var shorteners = new[] { "bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly", "rb.gy", "shorturl" };
-            if (shorteners.Any(s => u.Contains(s)))
-            {
-                flags.Add("🔗 Shortened URL — hides the real destination");
-                score += 30;
-            }
-
-            // ── Phishing keywords ──
-            var phishingWords = new[] { "verify", "login", "secure", "account", "update", "confirm", "banking", "suspend", "validate", "authenticate" };
-            int keywordHits = phishingWords.Count(w => u.Contains(w));
-            if (keywordHits >= 1)
-            {
-                flags.Add($"🎭 Phishing keyword(s) detected in URL ({keywordHits} found)");
-                score += keywordHits * 15;
-            }
-
-            // ── High risk TLDs ──
-            var riskyTlds = new[] { ".xyz", ".top", ".click", ".loan", ".work", ".gq", ".tk", ".ml", ".cf", ".ga" };
-            var matchedTld = riskyTlds.FirstOrDefault(t => u.Contains(t));
-            if (matchedTld != null)
-            {
-                flags.Add($"🌐 High-risk TLD ({matchedTld}) — commonly used in scams");
-                score += 25;
-            }
-
-            // ── Brand impersonation ──
-            var brands = new[] { "paypal", "amazon", "apple", "microsoft", "google", "netflix", "bank", "ebay" };
-            bool hasBrand = brands.Any(b => u.Contains(b));
-            bool isOfficialBrand = trustedDomains.Any(d => u.Contains(d));
-            if (hasBrand && !isOfficialBrand)
-            {
-                flags.Add("🎭 Brand name used in suspicious domain — likely impersonation");
-                score += 30;
-            }
-
-            // ── Excessively long URL ──
-            if (u.Length > 100)
-            {
-                flags.Add("📏 Unusually long URL — often used to hide malicious paths");
-                score += 10;
-            }
-
-            // ── Multiple subdomains ──
-            var host = u.Replace("http://", "").Replace("https://", "").Split('/')[0];
-            if (host.Count(c => c == '.') >= 3)
-            {
-                flags.Add("🔀 Excessive subdomains — common phishing trick");
-                score += 15;
-            }
-
-            score = Math.Min(score, 100);
+            // Call the centralized FinShieldService for scanning
+            var serviceResult = await FinShield.ScanUrlAsync(urlInput);
 
             result = new ScamAnalysisResult
             {
-                ScamProbabilityScore = score,
-                Verdict = score >= 75 ? "🔴 Likely Phishing / Malicious"
-                        : score >= 50 ? "🟠 Suspicious — Proceed with Caution"
-                        : "🟢 Appears Safe",
-                Flags = flags
+                ScamProbabilityScore = serviceResult.ScamProbabilityScore,
+                Verdict = serviceResult.Verdict,
+                Flags = serviceResult.Flags
             };
             scanTime = DateTime.Now;
         }

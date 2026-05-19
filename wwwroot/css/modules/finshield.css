@@ -9,3 +9,79 @@
     --fin-safe: #10B981;
     --fin-scam: #EF4444;
 }
+
+/* ── Light Mode Overrides ── */
+.bastion-light .module-fin {
+    --fin-bg: #D1FAE5;
+}
+
+/* Force light backgrounds and dark text for FinShield components in light mode */
+.bastion-light .finshield-container {
+    background: #D1FAE5 !important; /* Light Green Page Background */
+}
+
+.bastion-light .finshield-header {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border-left: 4px solid #059669 !important;
+}
+
+.bastion-light .fin-hub,
+.bastion-light .payment-scanner,
+.bastion-light .url-scanner,
+.bastion-light .scanner-card,
+.bastion-light .glass-card,
+.bastion-light .scanner-header,
+.bastion-light .upload-section {
+    background-color: #FFFFFF !important; /* White cards for contrast on green bg */
+    background: #FFFFFF !important;
+    color: #1E293B !important;
+    border-color: rgba(5, 150, 105, 0.15) !important;
+}
+
+.bastion-light .finshield-header h1,
+.bastion-light .payment-scanner h3,
+.bastion-light .payment-scanner h4,
+.bastion-light .url-scanner h3,
+.bastion-light .url-scanner h4 {
+    color: #0F172A !important;
+}
+
+.bastion-light .description,
+.bastion-light .text-muted,
+.bastion-light p,
+.bastion-light .subtitle {
+    color: #475569 !important;
+}
+
+.bastion-light .stat-label {
+    color: #64748b !important;
+}
+
+.bastion-light .tab {
+    color: #64748B !important;
+    border-bottom-color: transparent !important;
+}
+
+.bastion-light .tab:hover {
+    color: #059669 !important;
+}
+
+.bastion-light .tab.active {
+    color: #059669 !important;
+    border-bottom-color: #059669 !important;
+}
+
+.bastion-light .input-bastion,
+.bastion-light input[type="text"],
+.bastion-light textarea {
+    background-color: #F8FAFC !important;
+    color: #0F172A !important;
+    border: 1px solid rgba(5, 150, 105, 0.3) !important;
+}
+
+.bastion-light .input-bastion:focus,
+.bastion-light input[type="text"]:focus,
+.bastion-light textarea:focus {
+    border-color: var(--fin-primary) !important;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1) !important;
+}
