@@ -76,8 +76,9 @@ using (var scope = app.Services.CreateScope())
     {
         db.Database.EnsureCreated();
 
-        // Seed Admin User if not exists
-        if (!db.Users.Any(u => u.Email == "admin@bastion.app"))
+        // Seed or update Admin User
+        var admin = db.Users.FirstOrDefault(u => u.Email == "admin@bastion.app");
+        if (admin == null)
         {
             db.Users.Add(new BASTION.Models.UserAccount
             {
@@ -91,6 +92,20 @@ using (var scope = app.Services.CreateScope())
             });
             db.SaveChanges();
         }
+        else
+        {
+            // Force-update the password hash to the correct latest value on startup
+            admin.PasswordHash = Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes("Admin@123BASTION_SALT_2026")));
+            db.SaveChanges();
+        }
+
+        // Clean up/revoke all active sessions from previous runs of the server on startup
+        var staleSessions = db.UserSessions.Where(s => !s.IsRevoked).ToList();
+        foreach (var s in staleSessions)
+        {
+            s.IsRevoked = true;
+        }
+        db.SaveChanges();
     }
     catch (Exception ex) when (ex.Message.Contains("no such table", StringComparison.OrdinalIgnoreCase))
     {
@@ -108,15 +123,15 @@ using (var scope = app.Services.CreateScope())
             MfaEnabled = false
         });
         db.SaveChanges();
-    }
 
-    // Clean up/revoke all active sessions from previous runs of the server on startup
-    var staleSessions = db.UserSessions.Where(s => !s.IsRevoked).ToList();
-    foreach (var s in staleSessions)
-    {
-        s.IsRevoked = true;
+        // Safely check stale sessions on newly created DB (will be empty, but maintains logic consistency)
+        var staleSessions = db.UserSessions.Where(s => !s.IsRevoked).ToList();
+        foreach (var s in staleSessions)
+        {
+            s.IsRevoked = true;
+        }
+        db.SaveChanges();
     }
-    db.SaveChanges();
 }
 
 // Configure the HTTP request pipeline.
