@@ -43,4 +43,20 @@ public class UserSession
     public string Location { get; set; } = string.Empty;
     public DateTime LoginTime { get; set; } = DateTime.UtcNow;
     public bool IsRevoked { get; set; } = false;
+    public bool IsRevokedByAdmin { get; set; } = false;
+}
+
+public class SupportTicket
+{
+    public int Id { get; set; }
+    [Required]
+    public string Email { get; set; } = string.Empty;
+    [Required]
+    public string Title { get; set; } = string.Empty;
+    [Required]
+    public string Description { get; set; } = string.Empty;
+    [Required]
+    public string Status { get; set; } = "Open"; // Open, Investigating, Resolved, Closed
+    public string? AiResolution { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

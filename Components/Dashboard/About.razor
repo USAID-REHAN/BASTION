@@ -1,40 +1,151 @@
 @page "/about"
 @rendermode InteractiveServer
 
-<PageTitle>BASTION — About</PageTitle>
+<PageTitle>BASTION — About the Fortress</PageTitle>
 
-<div class="home-dashboard">
-    <div class="home-header">
-        <div class="home-greeting">
-            <h1>About BASTION</h1>
-            <p>Your Digital Fortress</p>
+<div class="home-dashboard" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    <!-- Centered Header -->
+    <div class="home-header" style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; margin-bottom: 48px; border-bottom: 1px solid var(--border-current); padding-bottom: 30px;">
+        <div style="font-size: 4rem; margin-bottom: 16px; color: var(--cyber-primary); filter: drop-shadow(0 0 20px rgba(0, 242, 254, 0.2));">
+            <i class="bi bi-shield-shaded"></i>
         </div>
+        <h1 style="font-size: 3rem; font-weight: 900; background: linear-gradient(135deg, var(--text-current) 0%, var(--text-muted) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; margin: 0;">About BASTION</h1>
+        <p style="font-size: 1.1rem; color: #38bdf8; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; margin: 12px 0 0; opacity: 0.9;">Your Digital Fortress</p>
     </div>
 
-    <div class="glass-card" style="padding: 30px; margin-bottom: 30px;">
-        <h2 style="color: #ffffff; margin-bottom: 16px;">The Vision</h2>
-        <p style="color: var(--text-muted); line-height: 1.6;">
-            BASTION is a state-of-the-art modular security suite designed to protect users from modern digital threats. 
-            Built on a strict "Zero-Coupling" architecture, every module operates independently, ensuring maximum reliability and flexibility.
+    <!-- Core Vision & Architecture Section -->
+    <div class="glass-card" style="padding: 40px; margin-bottom: 40px;">
+        <h2 style="margin-bottom: 20px; font-weight: 800; font-size: 1.6rem; display: flex; align-items: center; gap: 12px;">
+            <i class="bi bi-eye" style="color: #38bdf8;"></i> The Vision & Architecture
+        </h2>
+        <p style="color: var(--text-muted); line-height: 1.8; font-size: 1.05rem; margin-bottom: 20px;">
+            BASTION is a state-of-the-art modular cybersecurity suite designed to empower individuals and enterprise organizations against modern sophisticated digital threats. By integrating system auditing, legal contract threat intelligence, financial fraud defense, and immersive academic training under one unified command center, BASTION represents the next generation of cohesive security suites.
+        </p>
+        <p style="color: var(--text-muted); line-height: 1.8; font-size: 1.05rem; margin: 0;">
+            Built entirely on a strict <strong>Zero-Coupling Modular Architecture</strong>, every subsystem is engineered to operate in full isolation. This guarantees that component upgrades, data persistence channels, and external API connectors function independently—delivering unmatched platform stability, flawless performance, and high extensibility.
         </p>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-        <div class="glass-card" style="padding: 20px;">
-            <h3 style="color: var(--cyber-primary);"><i class="bi bi-shield-check"></i> CyberShield</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Device protection, PowerShell audit, IP checker, and password breach checking.</p>
+    <h2 style="text-align: center; margin-bottom: 32px; font-weight: 800; font-size: 1.8rem; letter-spacing: -0.5px;">Core Defense Modules</h2>
+
+    <!-- Detailed Modules Grid -->
+    <div style="display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 40px;">
+        
+        <!-- CyberShield -->
+        <div class="glass-card" style="padding: 32px; border: 1px solid rgba(6, 182, 212, 0.35);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
+                <h3 style="color: #06b6d4; font-size: 1.4rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 12px;">
+                    <i class="bi bi-shield-check"></i> CyberShield
+                </h3>
+                <span style="font-size: 0.82rem; font-weight: 700; background: rgba(6, 182, 212, 0.1); color: #06b6d4; padding: 6px 14px; border-radius: 30px; border: 1px solid rgba(6, 182, 212, 0.2); letter-spacing: 0.5px; text-transform: uppercase;">
+                    Created by Wania Rehman
+                </span>
+            </div>
+            <p style="color: var(--text-current); font-size: 1.05rem; line-height: 1.7; margin-bottom: 20px;">
+                CyberShield delivers comprehensive device-level protection and host audit automation. It parses local diagnostics output using securely generated system scripts to detect open ports and configuration flaws, while offering deep external threat intelligence, secure IP geolocations, and dynamic password breach scanning integrations to prevent identity hijack.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; border-top: 1px solid var(--border-current); padding-top: 20px;">
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">Vulnerability Audit</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Automated PowerShell parsing that scans system process trees and active host configurations.</p>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">Network Integrity</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">IP trace scanning, geolocation audits, and ISP threat intelligence.</p>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">Breach Protection</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Active security database scanning to detect and alert on compromised credentials.</p>
+                </div>
+            </div>
         </div>
-        <div class="glass-card" style="padding: 20px;">
-            <h3 style="color: var(--lex-primary);"><i class="bi bi-file-earmark-text"></i> LexGuard</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Document protection, AI contract analysis, clause highlights, and PDF export.</p>
+
+        <!-- LexGuard -->
+        <div class="glass-card" style="padding: 32px; border: 1px solid rgba(245, 158, 11, 0.35);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
+                <h3 style="color: #f59e0b; font-size: 1.4rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 12px;">
+                    <i class="bi bi-file-earmark-text"></i> LexGuard
+                </h3>
+                <span style="font-size: 0.82rem; font-weight: 700; background: rgba(245, 158, 11, 0.1); color: #f59e0b; padding: 6px 14px; border-radius: 30px; border: 1px solid rgba(245, 158, 11, 0.2); letter-spacing: 0.5px; text-transform: uppercase;">
+                    Created by M.Usaidullah Rehan
+                </span>
+            </div>
+            <p style="color: var(--text-current); font-size: 1.05rem; line-height: 1.7; margin-bottom: 20px;">
+                LexGuard fuses enterprise legal compliance with cognitive AI analysis. Users can upload complex PDF/DOCX agreements for deep analysis to uncover high-risk clauses, calculate absolute risk indices, generate interactive draft contracts based on secure prompts, and export finalized compliant legal reports directly to QuestPDF assets.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; border-top: 1px solid var(--border-current); padding-top: 20px;">
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">Clause Analyzer</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Heuristic AI audits highlighting hidden liabilities, indemnifications, and risk ratings.</p>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">Smart Drafter</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Interactive, prompt-based contract generation with deep SQLite state preservation.</p>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">QuestPDF Reports</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">On-demand, production-grade PDF compliance reports compiled instantly.</p>
+                </div>
+            </div>
         </div>
-        <div class="glass-card" style="padding: 20px;">
-            <h3 style="color: var(--fin-primary);"><i class="bi bi-currency-dollar"></i> FinShield</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Fraud protection, URL scanner, message analyzer, and scam feed.</p>
+
+        <!-- FinShield -->
+        <div class="glass-card" style="padding: 32px; border: 1px solid rgba(16, 185, 129, 0.35);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
+                <h3 style="color: #10b981; font-size: 1.4rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 12px;">
+                    <i class="bi bi-currency-dollar"></i> FinShield
+                </h3>
+                <span style="font-size: 0.82rem; font-weight: 700; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 6px 14px; border-radius: 30px; border: 1px solid rgba(16, 185, 129, 0.2); letter-spacing: 0.5px; text-transform: uppercase;">
+                    Created by Roman Fatima
+                </span>
+            </div>
+            <p style="color: var(--text-current); font-size: 1.05rem; line-height: 1.7; margin-bottom: 20px;">
+                FinShield forms a secure outer perimeter safeguarding user transactions and critical messaging channels. Combining instant deep-link URL safety scanning against global malicious registries, cognitive message phishing classifiers, and a dynamic localized database of neighborhood scam alerts, it neutralizes scams before they strike.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; border-top: 1px solid var(--border-current); padding-top: 20px;">
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">URL Safety Scanner</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Multi-tiered registry analysis that scores websites against phishing and fraud indexes.</p>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">Phishing Classifier</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Advanced semantic scanners that detect social engineering and manipulation patterns.</p>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">Scam Feed Tracker</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Geographically targeted reports alerting users to active regional fraud campaigns.</p>
+                </div>
+            </div>
         </div>
-        <div class="glass-card" style="padding: 20px;">
-            <h3 style="color: var(--hacker-primary);"><i class="bi bi-controller"></i> HackerLab</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Security academy with 5 domains, mini-games, XP, badges, and rank progression.</p>
+
+        <!-- HackerLab -->
+        <div class="glass-card" style="padding: 32px; border: 1px solid rgba(139, 92, 246, 0.35);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px;">
+                <h3 style="color: #a78bfa; font-size: 1.4rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 12px;">
+                    <i class="bi bi-controller"></i> HackerLab Academy
+                </h3>
+                <span style="font-size: 0.82rem; font-weight: 700; background: rgba(139, 92, 246, 0.1); color: #a78bfa; padding: 6px 14px; border-radius: 30px; border: 1px solid rgba(139, 92, 246, 0.2); letter-spacing: 0.5px; text-transform: uppercase;">
+                    BASTION Standard Academy
+                </span>
+            </div>
+            <p style="color: var(--text-current); font-size: 1.05rem; line-height: 1.7; margin-bottom: 20px;">
+                HackerLab acts as BASTION's premium training proving ground. Featuring 5 custom interactive domains, gamified simulations, instant scoring feedback, earned rank progressions, custom badges/medals, and dynamic XP calculations, it cultivates proactive defense readiness for users of all experience levels.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; border-top: 1px solid var(--border-current); padding-top: 20px;">
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">5 Training Domains</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Specialized academies covering Phishing, Network, Password, Physical, and Web security.</p>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">Gamified Challenges</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Interactive mini-games and scenario debriefs with live performance grading.</p>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;">Rank Progression</h4>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">Global XP leveling tracks with earnable security profile badges and ranking systems.</p>
+                </div>
+            </div>
         </div>
+
     </div>
 </div>

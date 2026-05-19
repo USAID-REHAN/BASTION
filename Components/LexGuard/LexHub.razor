@@ -545,6 +545,16 @@
 
     private void ViewHistoricalAnalysis(LexGuardAnalysis record)
     {
+        if (record.DocumentType?.ToLower() == "draft")
+        {
+            _draftResult = record.Summary;
+            _draftPrompt = record.ClausesJson;
+            _draftError = "";
+            _activeTab = "draft";
+            StateHasChanged();
+            return;
+        }
+
         var result = AnalysisService.DeserializeAnalysis(record);
         if (result != null)
         {
@@ -563,6 +573,22 @@
 
     private async Task DownloadHistoricalPdf(LexGuardAnalysis record)
     {
+        if (record.DocumentType?.ToLower() == "draft")
+        {
+            try
+            {
+                var pdfBytes = PdfService.GenerateDraftPdf(record.Summary);
+                var base64 = Convert.ToBase64String(pdfBytes);
+                var reportName = $"{Path.GetFileNameWithoutExtension(record.DocumentName).Replace(" ", "_")}_{record.AnalyzedAt:yyyyMMdd_HHmm}.pdf";
+                await JS.InvokeVoidAsync("bastionLexGuard.downloadFile", reportName, "application/pdf", base64);
+            }
+            catch (Exception ex)
+            {
+                _errorMessage = $"PDF generation failed: {ex.Message}";
+            }
+            return;
+        }
+
         var result = AnalysisService.DeserializeAnalysis(record);
         if (result == null) return;
 
@@ -617,6 +643,29 @@
         try
         {
             _draftResult = await AnalysisService.DraftContractAsync(_draftPrompt);
+            
+            // ── Persist Draft into History ──
+            var userId = AuthService.CurrentUser?.Email ?? "anonymous";
+            var documentName = GetDraftName(_draftPrompt, _draftResult);
+            
+            var record = new LexGuardAnalysis
+            {
+                UserId = userId,
+                DocumentName = documentName,
+                DocumentType = "draft",
+                DocumentSizeBytes = System.Text.Encoding.UTF8.GetByteCount(_draftResult),
+                AnalyzedAt = DateTime.UtcNow,
+                RiskScore = 0,
+                RiskLevel = "safe",
+                Summary = _draftResult,
+                ClausesJson = _draftPrompt, // Store the user prompt in ClausesJson to restore on click
+                ObligationsJson = "[]",
+                MissingClausesJson = "[]"
+            };
+
+            Db.LexGuardAnalyses.Add(record);
+            await Db.SaveChangesAsync();
+            await LoadHistory(); // Refresh history immediately
         }
         catch (Exception ex)
         {
@@ -625,6 +674,28 @@
 
         _isDrafting = false;
         StateHasChanged();
+    }
+
+    private string GetDraftName(string prompt, string result)
+    {
+        // Try to extract the first heading from the markdown
+        var headingMatch = System.Text.RegularExpressions.Regex.Match(result, @"^#+\s+(.+)$", System.Text.RegularExpressions.RegexOptions.Multiline);
+        if (headingMatch.Success)
+        {
+            var title = headingMatch.Groups[1].Value.Trim().Trim('*', '#', ' ', '\t');
+            if (!string.IsNullOrEmpty(title) && title.Length < 100)
+            {
+                return $"Draft: {title}";
+            }
+        }
+
+        // Fallback: truncated prompt
+        var cleanPrompt = prompt.Trim().Replace("\r", "").Replace("\n", " ");
+        if (cleanPrompt.Length > 50)
+        {
+            return $"Draft: {cleanPrompt[..47]}...";
+        }
+        return $"Draft: {cleanPrompt}";
     }
 
     private async Task CopyDraft()

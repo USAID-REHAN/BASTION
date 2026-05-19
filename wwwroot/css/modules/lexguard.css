@@ -558,9 +558,10 @@
     flex-shrink: 0;
 }
 
-.lex-history-icon.safe { background: rgba(16, 185, 129, 0.12); }
-.lex-history-icon.caution { background: rgba(245, 158, 11, 0.12); }
-.lex-history-icon.danger { background: rgba(239, 68, 68, 0.12); }
+.lex-history-icon.safe { background: rgba(16, 185, 129, 0.12); color: #10B981; }
+.lex-history-icon.caution { background: rgba(245, 158, 11, 0.12); color: #F59E0B; }
+.lex-history-icon.danger { background: rgba(239, 68, 68, 0.12); color: #EF4444; }
+.lex-history-icon.draft { background: rgba(139, 92, 246, 0.12); color: #8B5CF6; }
 
 .lex-history-info {
     flex: 1;
@@ -591,6 +592,7 @@
 .lex-history-score.safe { color: #10B981; }
 .lex-history-score.caution { color: #F59E0B; }
 .lex-history-score.danger { color: #EF4444; }
+.lex-history-score.draft { color: #8B5CF6; }
 
 .lex-history-actions {
     display: flex;

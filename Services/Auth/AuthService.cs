@@ -13,6 +13,7 @@ public class AuthService : IDisposable
 {
     private readonly BastionDbContext _dbContext;
     private UserAccount? _currentUser;
+    private int? _currentSessionId;
     public event Action? OnAuthStateChanged;
     public static event Action<string>? OnSessionRevoked;
 
@@ -103,15 +104,28 @@ public class AuthService : IDisposable
         _currentUser = user;
         _dbContext.SaveChanges();
 
-        _dbContext.UserSessions.Add(new UserSession
+        // Revoke all previous active sessions for this user to keep active sessions clean and duplicate-free
+        var previousActiveSessions = _dbContext.UserSessions
+            .Where(s => s.Email == email && !s.IsRevoked)
+            .ToList();
+        foreach (var oldSession in previousActiveSessions)
+        {
+            oldSession.IsRevoked = true;
+        }
+        _dbContext.SaveChanges();
+
+        var newSession = new UserSession
         {
             Email = email,
             Device = "Web Browser",
             Location = user.City ?? "Unknown",
             LoginTime = DateTime.UtcNow,
             IsRevoked = false
-        });
+        };
+        _dbContext.UserSessions.Add(newSession);
         _dbContext.SaveChanges();
+
+        _currentSessionId = newSession.Id;
 
         OnAuthStateChanged?.Invoke();
         return (true, "Welcome back, " + user.FullName + "!");
@@ -132,6 +146,7 @@ public class AuthService : IDisposable
             }
         }
         _currentUser = null;
+        _currentSessionId = null;
         OnAuthStateChanged?.Invoke();
     }
 
@@ -157,7 +172,8 @@ public class AuthService : IDisposable
                 Device = s.Device,
                 Location = s.Location,
                 LoginTime = s.LoginTime,
-                IsActive = !s.IsRevoked
+                IsActive = !s.IsRevoked,
+                IsRevokedByAdmin = s.IsRevokedByAdmin
             })
             .ToList();
     }
@@ -172,7 +188,8 @@ public class AuthService : IDisposable
                 Device = s.Device,
                 Location = s.Location,
                 LoginTime = s.LoginTime,
-                IsActive = !s.IsRevoked
+                IsActive = !s.IsRevoked,
+                IsRevokedByAdmin = s.IsRevokedByAdmin
             })
             .ToList();
     }
@@ -188,16 +205,38 @@ public class AuthService : IDisposable
         if (dbSession != null)
         {
             dbSession.IsRevoked = true;
+            dbSession.IsRevokedByAdmin = true; // Explicitly marked as admin revoked!
             _dbContext.SaveChanges();
         }
 
         session.IsActive = false;
+        session.IsRevokedByAdmin = true;
         OnSessionRevoked?.Invoke(session.UserEmail);
     }
 
     public void Dispose()
     {
         OnSessionRevoked -= HandleSessionRevoked;
+
+        if (_currentSessionId.HasValue)
+        {
+            try
+            {
+                var optionsBuilder = new DbContextOptionsBuilder<BastionDbContext>();
+                optionsBuilder.UseSqlite("Data Source=bastion.db");
+                using var db = new BastionDbContext(optionsBuilder.Options);
+                var session = db.UserSessions.Find(_currentSessionId.Value);
+                if (session != null)
+                {
+                    session.IsRevoked = true;
+                    db.SaveChanges();
+                }
+            }
+            catch
+            {
+                // Prevent failures in Dispose during server cleanup
+            }
+        }
     }
 
     public ClaimsPrincipal GetClaimsPrincipal()
@@ -230,4 +269,5 @@ public class SessionInfo
     public string Location { get; set; } = "";
     public DateTime LoginTime { get; set; }
     public bool IsActive { get; set; }
+    public bool IsRevokedByAdmin { get; set; }
 }

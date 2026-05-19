@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @implements IDisposable
 @inject BASTION.Services.Auth.AuthService AuthService
+@inject BASTION.Services.Auth.AdminService AdminService
 @inject BASTION.Services.Theme.ThemeService ThemeService
 @inject BASTION.Services.Sound.SoundService SoundService
 @inject NavigationManager Navigation
@@ -10,6 +11,41 @@
 {
     <!-- No layout for auth pages — GateKeeper handles its own full-page layout -->
     @Body
+}
+else if (AdminService.GetSystemConfig().TryGetValue("MaintenanceMode", out var mode) && mode == "True" && !AuthService.IsAdmin)
+{
+    <div class="maintenance-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: #0f172a; color: #ffffff; font-family: 'Inter', sans-serif; text-align: center; padding: 40px 20px; overflow: hidden; position: relative;">
+        <!-- Cyber grid background -->
+        <div style="position: absolute; inset: 0; background-image: radial-gradient(rgba(239, 68, 68, 0.05) 1px, transparent 0), radial-gradient(rgba(239, 68, 68, 0.05) 1px, transparent 0); background-size: 24px 24px; background-position: 0 0, 12px 12px; pointer-events: none; opacity: 0.5;"></div>
+        
+        <!-- Premium glass construction card -->
+        <div style="background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 16px; padding: 48px; max-width: 550px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5); position: relative; z-index: 10;">
+            <div class="maintenance-icon" style="width: 80px; height: 80px; background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; box-shadow: 0 0 30px rgba(239, 68, 68, 0.3); animation: pulse 2s infinite;">
+                <i class="bi bi-cone-striped" style="font-size: 2.5rem; color: #ef4444;"></i>
+            </div>
+            
+            <h1 style="font-size: 1.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #ffffff; margin: 0 0 16px;">BASTION Under Maintenance</h1>
+            <div style="height: 4px; width: 60px; background: #ef4444; margin: 0 auto 24px; border-radius: 2px;"></div>
+            
+            <p style="font-size: 0.95rem; color: #94a3b8; line-height: 1.7; margin-bottom: 32px;">
+                Our cybersecurity fortress is currently undergoing planned system optimization and structural defense upgrades to ensure absolute protection. We will return online shortly.
+            </p>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem;">
+                    <span style="color: #64748b; font-weight: 500;">Status</span>
+                    <span style="color: #ef4444; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                        <span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%; display: inline-block;"></span>
+                        UPGRADING SHIELDS
+                    </span>
+                </div>
+                
+                <button class="btn-gate btn-gate-primary" @onclick="Logout" style="width: 100%; justify-content: center; background: #ef4444; border-color: #ef4444; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3); font-weight: 600;">
+                    <i class="bi bi-box-arrow-right"></i> Sign Out
+                </button>
+            </div>
+        </div>
+    </div>
 }
 else
 {

@@ -57,24 +57,6 @@
     </div>
 </div>
 
-<!-- Sentinel Report Upload (COAL Bonus) -->
-<div class="cyber-card">
-    <div class="cyber-card-title">
-        <i class="bi bi-file-earmark-code"></i>
-        Optional — Upload sentinel_report.txt
-        <span class="badge-bastion badge-info" style="margin-left: auto;">COAL BONUS</span>
-    </div>
-    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
-        Upload a sentinel_report.txt from the companion Assembly scanner for hardware-level analysis.
-    </p>
-    <InputFile OnChange="OnSentinelFileSelected" accept=".txt" id="sentinel-upload" />
-    @if (!string.IsNullOrWhiteSpace(_sentinelContent))
-    {
-        <div style="margin-top: 8px; font-size: 0.82rem; color: var(--success);">
-            <i class="bi bi-check-circle"></i> File loaded (@_sentinelContent.Length.ToString("N0") chars) — will be included in analysis.
-        </div>
-    }
-</div>
 
 <!-- Analysis Report -->
 @if (_reportSections.Count > 0)
@@ -113,7 +95,6 @@
     private bool _copied;
     private bool _isAnalyzing;
     private string _pastedOutput = "";
-    private string _sentinelContent = "";
     private List<ReportSection> _reportSections = new();
     private HashSet<string> _openSections = new();
 
@@ -138,17 +119,6 @@ Write-Output '=== PATCHES ==='; Get-HotFix | Sort InstalledOn -Desc | Select -Fi
         catch { /* clipboard not available */ }
     }
 
-    private async Task OnSentinelFileSelected(InputFileChangeEventArgs e)
-    {
-        try
-        {
-            var file = e.File;
-            if (file.Size > 1_000_000) return; // 1MB max
-            using var reader = new StreamReader(file.OpenReadStream(1_000_000));
-            _sentinelContent = await reader.ReadToEndAsync();
-        }
-        catch { _sentinelContent = ""; }
-    }
 
     private async Task DownloadReportPdf()
     {
@@ -189,10 +159,6 @@ Write-Output '=== PATCHES ==='; Get-HotFix | Sort InstalledOn -Desc | Select -Fi
 Be specific, actionable, and reference actual data from the output. If sentinel_report.txt hardware data is included, incorporate CPUID, GPU driver, and registry startup analysis.";
 
         var userInput = _pastedOutput;
-        if (!string.IsNullOrWhiteSpace(_sentinelContent))
-        {
-            userInput += "\n\n=== SENTINEL HARDWARE REPORT ===\n" + _sentinelContent;
-        }
 
         var response = await GroqService.ChatAsync(systemPrompt, userInput);
         ParseReport(response);

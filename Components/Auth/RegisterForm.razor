@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @layout BASTION.Components.Layout.MainLayout
 @inject BASTION.Services.Auth.AuthService AuthService
+@inject BASTION.Services.Auth.AdminService AdminService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -16,159 +17,177 @@
                 <p>Create Your Fortress</p>
             </div>
 
-            <div class="gate-glass-form">
-                <!-- Step Indicators -->
-                <div class="gate-steps">
-                    <div class="gate-step">
-                        <div class="gate-step-dot @(_step == 1 ? "active" : _step > 1 ? "completed" : "")">
-                            @(_step > 1 ? "✓" : "1")
-                        </div>
+            @if (_registrationDisabled)
+            {
+                <div class="gate-glass-form" style="text-align: center; padding: 40px 24px;">
+                    <div style="font-size: 3rem; margin-bottom: 20px; color: var(--gate-primary); filter: drop-shadow(0 0 15px rgba(220, 38, 38, 0.4));">
+                        <i class="bi bi-shield-slash"></i>
                     </div>
-                    <div class="gate-step-line @(_step > 1 ? "active" : "")"></div>
-                    <div class="gate-step">
-                        <div class="gate-step-dot @(_step == 2 ? "active" : _step > 2 ? "completed" : "")">
-                            @(_step > 2 ? "✓" : "2")
-                        </div>
-                    </div>
-                    <div class="gate-step-line @(_step > 2 ? "active" : "")"></div>
-                    <div class="gate-step">
-                        <div class="gate-step-dot @(_step == 3 ? "active" : "")">3</div>
-                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; color: #ffffff; margin-bottom: 12px; letter-spacing: 0.5px;">Registration Closed</h3>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 28px;">
+                        Creating new accounts has been temporarily disabled by the system administrator for security upgrades. Please check back later.
+                    </p>
+                    <a href="/login" class="btn-gate btn-gate-primary" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 600;">
+                        <i class="bi bi-arrow-left"></i> Go to Sign In
+                    </a>
                 </div>
-
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <div class="gate-error">
-                        <i class="bi bi-exclamation-circle"></i> @_errorMessage
-                    </div>
-                }
-
-                @if (!string.IsNullOrEmpty(_successMessage))
-                {
-                    <div class="gate-success">
-                        <i class="bi bi-check-circle"></i> @_successMessage
-                    </div>
-                }
-
-                <!-- Step 1: Account Details -->
-                @if (_step == 1)
-                {
-                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #ffffff;">Account Details</h3>
-
-                    <div class="gate-input-group">
-                        <label>Full Name</label>
-                        <input type="text" class="gate-input" placeholder="John Doe" @bind="_model.FullName" @bind:event="oninput" />
-                    </div>
-
-                    <div class="gate-input-group">
-                        <label>Email Address</label>
-                        <input type="email" class="gate-input" placeholder="you@example.com" @bind="_model.Email" @bind:event="oninput" />
-                    </div>
-
-                    <div class="gate-input-group">
-                        <label>Password</label>
-                        <input type="password" class="gate-input" placeholder="Min 8 characters" value="@_model.Password" @oninput="OnPasswordInput" />
-                        <!-- Strength Meter -->
-                        <div class="strength-meter">
-                            <div class="strength-bar-bg">
-                                <div class="strength-bar-fill" style="width: @_strengthPercent%; background-color: @_strengthColor;"></div>
+            }
+            else
+            {
+                <div class="gate-glass-form">
+                    <!-- Step Indicators -->
+                    <div class="gate-steps">
+                        <div class="gate-step">
+                            <div class="gate-step-dot @(_step == 1 ? "active" : _step > 1 ? "completed" : "")">
+                                @(_step > 1 ? "✓" : "1")
                             </div>
-                            <div class="strength-label">
-                                <span style="color: @_strengthColor;">@_strengthText</span>
-                                <span style="color: var(--text-muted-dark);">@_entropy bits entropy</span>
+                        </div>
+                        <div class="gate-step-line @(_step > 1 ? "active" : "")"></div>
+                        <div class="gate-step">
+                            <div class="gate-step-dot @(_step == 2 ? "active" : _step > 2 ? "completed" : "")">
+                                @(_step > 2 ? "✓" : "2")
                             </div>
+                        </div>
+                        <div class="gate-step-line @(_step > 2 ? "active" : "")"></div>
+                        <div class="gate-step">
+                            <div class="gate-step-dot @(_step == 3 ? "active" : "")">3</div>
                         </div>
                     </div>
 
-                    <div class="gate-input-group">
-                        <label>Confirm Password</label>
-                        <input type="password" class="gate-input @(_model.ConfirmPassword.Length > 0 && _model.Password != _model.ConfirmPassword ? "input-error" : "")"
-                               placeholder="Re-enter password" @bind="_model.ConfirmPassword" @bind:event="oninput" />
-                        @if (_model.ConfirmPassword.Length > 0 && _model.Password != _model.ConfirmPassword)
-                        {
-                            <span style="font-size: 0.8rem; color: var(--danger); margin-top: 4px; display: block;">Passwords do not match</span>
-                        }
-                    </div>
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="gate-error">
+                            <i class="bi bi-exclamation-circle"></i> @_errorMessage
+                        </div>
+                    }
 
-                    <button class="btn-gate btn-gate-primary" @onclick="GoToStep2"
-                            disabled="@(string.IsNullOrWhiteSpace(_model.FullName) || string.IsNullOrWhiteSpace(_model.Email) || _model.Password.Length < 8 || _model.Password != _model.ConfirmPassword)">
-                        Continue <i class="bi bi-arrow-right"></i>
-                    </button>
-                }
+                    @if (!string.IsNullOrEmpty(_successMessage))
+                    {
+                        <div class="gate-success">
+                            <i class="bi bi-check-circle"></i> @_successMessage
+                        </div>
+                    }
 
-                <!-- Step 2: Profile Setup -->
-                @if (_step == 2)
-                {
-                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #ffffff;">Profile Setup</h3>
+                    <!-- Step 1: Account Details -->
+                    @if (_step == 1)
+                    {
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #ffffff;">Account Details</h3>
 
-                    <div class="gate-input-group">
-                        <label>City (for localized scam feed)</label>
-                        <select class="gate-input" @bind="_model.City">
-                            <option value="">Select your city</option>
-                            <option value="Islamabad">Islamabad</option>
-                            <option value="Karachi">Karachi</option>
-                            <option value="Lahore">Lahore</option>
-                            <option value="Rawalpindi">Rawalpindi</option>
-                            <option value="Peshawar">Peshawar</option>
-                            <option value="Quetta">Quetta</option>
-                            <option value="Faisalabad">Faisalabad</option>
-                            <option value="Multan">Multan</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
+                        <div class="gate-input-group">
+                            <label>Full Name</label>
+                            <input type="text" class="gate-input" placeholder="John Doe" @bind="_model.FullName" @bind:event="oninput" />
+                        </div>
 
-                    <div style="display: flex; gap: 12px;">
-                        <button class="btn-gate btn-gate-outline" style="flex: 0 0 auto;" @onclick="() => _step = 1">
-                            <i class="bi bi-arrow-left"></i> Back
-                        </button>
-                        <button class="btn-gate btn-gate-primary" style="flex: 1;" @onclick="GoToStep3">
+                        <div class="gate-input-group">
+                            <label>Email Address</label>
+                            <input type="email" class="gate-input" placeholder="you@example.com" @bind="_model.Email" @bind:event="oninput" />
+                        </div>
+
+                        <div class="gate-input-group">
+                            <label>Password</label>
+                            <input type="password" class="gate-input" placeholder="Min 8 characters" value="@_model.Password" @oninput="OnPasswordInput" />
+                            <!-- Strength Meter -->
+                            <div class="strength-meter">
+                                <div class="strength-bar-bg">
+                                    <div class="strength-bar-fill" style="width: @_strengthPercent%; background-color: @_strengthColor;"></div>
+                                </div>
+                                <div class="strength-label">
+                                    <span style="color: @_strengthColor;">@_strengthText</span>
+                                    <span style="color: var(--text-muted-dark);">@_entropy bits entropy</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="gate-input-group">
+                            <label>Confirm Password</label>
+                            <input type="password" class="gate-input @(_model.ConfirmPassword.Length > 0 && _model.Password != _model.ConfirmPassword ? "input-error" : "")"
+                                   placeholder="Re-enter password" @bind="_model.ConfirmPassword" @bind:event="oninput" />
+                            @if (_model.ConfirmPassword.Length > 0 && _model.Password != _model.ConfirmPassword)
+                            {
+                                <span style="font-size: 0.8rem; color: var(--danger); margin-top: 4px; display: block;">Passwords do not match</span>
+                            }
+                        </div>
+
+                        <button class="btn-gate btn-gate-primary" @onclick="GoToStep2"
+                                disabled="@(string.IsNullOrWhiteSpace(_model.FullName) || string.IsNullOrWhiteSpace(_model.Email) || _model.Password.Length < 8 || _model.Password != _model.ConfirmPassword)">
                             Continue <i class="bi bi-arrow-right"></i>
                         </button>
-                    </div>
-                }
+                    }
 
-                <!-- Step 3: Confirmation -->
-                @if (_step == 3)
-                {
-                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #ffffff;">Confirm & Create</h3>
+                    <!-- Step 2: Profile Setup -->
+                    @if (_step == 2)
+                    {
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #ffffff;">Profile Setup</h3>
 
-                    <div style="background: rgba(255,255,255,0.03); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
-                            <span style="color: var(--text-muted-dark);">Name</span>
-                            <span style="color: #ffffff;">@_model.FullName</span>
+                        <div class="gate-input-group">
+                            <label>City (for localized scam feed)</label>
+                            <select class="gate-input" @bind="_model.City">
+                                <option value="">Select your city</option>
+                                <option value="Islamabad">Islamabad</option>
+                                <option value="Karachi">Karachi</option>
+                                <option value="Lahore">Lahore</option>
+                                <option value="Rawalpindi">Rawalpindi</option>
+                                <option value="Peshawar">Peshawar</option>
+                                <option value="Quetta">Quetta</option>
+                                <option value="Faisalabad">Faisalabad</option>
+                                <option value="Multan">Multan</option>
+                                <option value="Other">Other</option>
+                            </select>
                         </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
-                            <span style="color: var(--text-muted-dark);">Email</span>
-                            <span style="color: #ffffff;">@_model.Email</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
-                            <span style="color: var(--text-muted-dark);">City</span>
-                            <span style="color: #ffffff;">@(string.IsNullOrEmpty(_model.City) ? "Not specified" : _model.City)</span>
-                        </div>
-                    </div>
 
-                    <div style="display: flex; gap: 12px;">
-                        <button class="btn-gate btn-gate-outline" style="flex: 0 0 auto;" @onclick="() => _step = 2">
-                            <i class="bi bi-arrow-left"></i> Back
-                        </button>
-                        <button class="btn-gate btn-gate-primary" style="flex: 1;" @onclick="HandleRegister" disabled="@_isLoading">
-                            @if (_isLoading)
-                            {
-                                <span>Creating account...</span>
-                            }
-                            else
-                            {
-                                <i class="bi bi-shield-check"></i>
-                                <span>Create Account</span>
-                            }
-                        </button>
-                    </div>
-                }
+                        <div style="display: flex; gap: 12px;">
+                            <button class="btn-gate btn-gate-outline" style="flex: 0 0 auto;" @onclick="() => _step = 1">
+                                <i class="bi bi-arrow-left"></i> Back
+                            </button>
+                            <button class="btn-gate btn-gate-primary" style="flex: 1;" @onclick="GoToStep3">
+                                Continue <i class="bi bi-arrow-right"></i>
+                            </button>
+                        </div>
+                    }
 
-                <div class="gate-footer">
-                    Already have an account? <a href="/login">Sign in</a>
+                    <!-- Step 3: Confirmation -->
+                    @if (_step == 3)
+                    {
+                        <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: #ffffff;">Confirm & Create</h3>
+
+                        <div style="background: rgba(255,255,255,0.03); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
+                                <span style="color: var(--text-muted-dark);">Name</span>
+                                <span style="color: #ffffff;">@_model.FullName</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
+                                <span style="color: var(--text-muted-dark);">Email</span>
+                                <span style="color: #ffffff;">@_model.Email</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                                <span style="color: var(--text-muted-dark);">City</span>
+                                <span style="color: #ffffff;">@(string.IsNullOrEmpty(_model.City) ? "Not specified" : _model.City)</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 12px;">
+                            <button class="btn-gate btn-gate-outline" style="flex: 0 0 auto;" @onclick="() => _step = 2">
+                                <i class="bi bi-arrow-left"></i> Back
+                            </button>
+                            <button class="btn-gate btn-gate-primary" style="flex: 1;" @onclick="HandleRegister" disabled="@_isLoading">
+                                @if (_isLoading)
+                                {
+                                    <span>Creating account...</span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-shield-check"></i>
+                                    <span>Create Account</span>
+                                }
+                            </button>
+                        </div>
+                    }
+
+                    <div class="gate-footer">
+                        Already have an account? <a href="/login">Sign in</a>
+                    </div>
                 </div>
-            </div>
+            }
         </div>
     </div>
 
@@ -188,6 +207,7 @@
     private string? _errorMessage;
     private string? _successMessage;
     private bool _isLoading;
+    private bool _registrationDisabled;
 
     // Password strength
     private int _strengthPercent;
@@ -199,6 +219,12 @@
     {
         if (AuthService.IsAuthenticated)
             Navigation.NavigateTo("/");
+
+        var config = AdminService.GetSystemConfig();
+        if (config.TryGetValue("RegistrationEnabled", out var val) && val == "False")
+        {
+            _registrationDisabled = true;
+        }
     }
 
     private void OnPasswordInput(ChangeEventArgs e)

@@ -54,6 +54,7 @@ builder.Services.AddScoped<XpService>();
 // ── LexGuard Services ──
 builder.Services.AddScoped<DocumentAnalysisService>();
 builder.Services.AddScoped<PdfReportService>();
+builder.Services.AddScoped<BASTION.Services.Support.SupportAgentService>();
 
 // ── Module Registrations (IModule) ──
 builder.Services.AddScoped<IModule, HomescreenModule>();        // Dashboard
@@ -108,6 +109,14 @@ using (var scope = app.Services.CreateScope())
         });
         db.SaveChanges();
     }
+
+    // Clean up/revoke all active sessions from previous runs of the server on startup
+    var staleSessions = db.UserSessions.Where(s => !s.IsRevoked).ToList();
+    foreach (var s in staleSessions)
+    {
+        s.IsRevoked = true;
+    }
+    db.SaveChanges();
 }
 
 // Configure the HTTP request pipeline.

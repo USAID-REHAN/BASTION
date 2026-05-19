@@ -1,48 +1,715 @@
 @page "/support"
+@using BASTION.Models
+@using BASTION.Services.Support
+@using BASTION.Services.Auth
+@using BASTION.Services.AI
+@using Microsoft.EntityFrameworkCore
+@inject SupportAgentService AgentService
+@inject AuthService AuthService
+@inject BASTION.Data.BastionDbContext DbContext
 @rendermode InteractiveServer
 
-<PageTitle>BASTION — Support</PageTitle>
+<PageTitle>BASTION — Support & Documentation</PageTitle>
 
-<div class="home-dashboard">
-    <div class="home-header">
+<div class="home-dashboard" style="max-width: 1200px; margin: 0 auto; padding: 20px; font-family: 'Inter', sans-serif;">
+    
+    <!-- Header -->
+    <div class="home-header" style="margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
         <div class="home-greeting">
-            <h1>Support Center</h1>
-            <p>How can we help you today?</p>
+            @if (_viewDocsMode)
+            {
+                <h1 style="font-size: 2.2rem; font-weight: 800; display: flex; align-items: center; gap: 12px; margin: 0;">
+                    <i class="bi bi-journal-text" style="color: var(--cyber-primary);"></i> BASTION Documentation
+                </h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px; margin-bottom: 0;">Comprehensive user manuals, architectural details, and guides.</p>
+            }
+            else if (_viewChatMode)
+            {
+                <h1 style="font-size: 2.2rem; font-weight: 800; display: flex; align-items: center; gap: 12px; margin: 0;">
+                    <i class="bi bi-chat-dots-fill" style="color: var(--cyber-primary);"></i> Live Chat Support
+                </h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px; margin-bottom: 0;">Autonomous Sentinel-AI Co-pilot active and ready.</p>
+            }
+            else if (_viewTicketsMode)
+            {
+                <h1 style="font-size: 2.2rem; font-weight: 800; display: flex; align-items: center; gap: 12px; margin: 0;">
+                    <i class="bi bi-ticket-perforated-fill" style="color: #10b981;"></i> Tickets Dispatch
+                </h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px; margin-bottom: 0;">Autonomous agentic ticket investigation & diagnostic logs.</p>
+            }
+            else
+            {
+                <h1 style="font-size: 2.2rem; font-weight: 800; margin: 0;">Support Center</h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px; margin-bottom: 0;">How can we help you today?</p>
+            }
         </div>
+        
+        @if (_viewDocsMode || _viewChatMode || _viewTicketsMode)
+        {
+            <button class="btn-ghost-bastion" @onclick="ReturnToHome" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;">
+                <i class="bi bi-arrow-left"></i> Support Portal Home
+            </button>
+        }
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
-        <div class="glass-card" style="padding: 20px; text-align: center;">
-            <div style="font-size: 2rem; color: var(--cyber-primary); margin-bottom: 10px;"><i class="bi bi-chat-dots"></i></div>
-            <h3 style="color: #ffffff;">Live Chat</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">Talk to our security experts in real-time.</p>
-            <button class="btn-action btn-promote" style="margin-top: 10px;">Start Chat</button>
+    <!-- Alert / Toast Banner -->
+    @if (!string.IsNullOrEmpty(_toastMessage))
+    {
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px 20px; margin-bottom: 24px; color: #34d399; display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; animation: slideIn 0.3s ease;">
+            <span style="display: flex; align-items: center; gap: 8px;">
+                <i class="bi bi-check-circle"></i> @_toastMessage
+            </span>
+            <button style="background: none; border: none; color: #34d399; cursor: pointer; font-size: 1.1rem;" @onclick="() => _toastMessage = null">×</button>
         </div>
-        <div class="glass-card" style="padding: 20px; text-align: center;">
-            <div style="font-size: 2rem; color: var(--success); margin-bottom: 10px;"><i class="bi bi-ticket-perforated"></i></div>
-            <h3 style="color: #ffffff;">Support Tickets</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">Open a ticket for complex issues.</p>
-            <button class="btn-action btn-promote" style="margin-top: 10px;">Create Ticket</button>
-        </div>
-        <div class="glass-card" style="padding: 20px; text-align: center;">
-            <div style="font-size: 2rem; color: var(--hacker-primary); margin-bottom: 10px;"><i class="bi bi-journal-text"></i></div>
-            <h3 style="color: #ffffff;">Documentation</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">Read guides and FAQs.</p>
-            <button class="btn-action btn-promote" style="margin-top: 10px;">View Docs</button>
-        </div>
-    </div>
+    }
 
-    <div class="glass-card" style="padding: 20px;">
-        <h2 style="color: #ffffff; margin-bottom: 16px;">Frequently Asked Questions</h2>
-        <div style="display: flex; flex-direction: column; gap: 14px;">
-            <div>
-                <div style="font-weight: 600; color: #ffffff;">How do I reset my password?</div>
-                <div style="color: var(--text-muted); font-size: 0.9rem;">You can reset your password in the Account section of Settings.</div>
+    <!-- ── VIEW 1: Support Portal Home ── -->
+    @if (!_viewDocsMode && !_viewChatMode && !_viewTicketsMode)
+    {
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 32px;">
+            
+            <!-- Live Chat Card (Autonomous Agentic) -->
+            <div class="glass-card" style="padding: 30px; text-align: center; border-radius: 12px; border: 1px solid rgba(6, 182, 212, 0.3); background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(6, 182, 212, 0.02) 100%); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                <div style="width: 60px; height: 60px; background: rgba(6, 182, 212, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                    <i class="bi bi-chat-dots-fill" style="font-size: 1.8rem; color: var(--cyber-primary);"></i>
+                </div>
+                <h3 style="font-weight: 700; margin-bottom: 10px;">Live Chat Co-pilot</h3>
+                <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 20px;">Consult with BASTION-Sentinel AI. The agent can dynamically inspect platform configs or active sessions using C# tools.</p>
+                <button class="btn-action" style="width: 100%; justify-content: center; background: var(--cyber-primary); border-color: var(--cyber-primary); color: white; font-weight: 600;" @onclick="StartChat">Start Chat</button>
             </div>
-            <div>
-                <div style="font-weight: 600; color: #ffffff;">Is my data safe?</div>
-                <div style="color: var(--text-muted); font-size: 0.9rem;">Yes, BASTION uses local SQLite storage and does not send your data to external servers unless explicitly requested.</div>
+
+            <!-- Support Tickets Card (Autonomous Agentic) -->
+            <div class="glass-card" style="padding: 30px; text-align: center; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.3); background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(16, 185, 129, 0.02) 100%); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                <div style="width: 60px; height: 60px; background: rgba(16, 185, 129, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                    <i class="bi bi-ticket-perforated-fill" style="font-size: 1.8rem; color: #10b981;"></i>
+                </div>
+                <h3 style="font-weight: 700; margin-bottom: 10px;">Auto-Ticket Solver</h3>
+                <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 20px;">Submit diagnostic tickets. Our agent runs automated scans, config adjustments, and database repairs instantly.</p>
+                <button class="btn-action" style="width: 100%; justify-content: center; background: #10b981; border-color: #10b981; color: white; font-weight: 600;" @onclick="StartTickets">Create / View Tickets</button>
+            </div>
+
+            <!-- Documentation Card -->
+            <div class="glass-card" style="padding: 30px; text-align: center; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.3); background: linear-gradient(135deg, var(--glass-bg) 0%, rgba(245, 158, 11, 0.02) 100%); transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.15)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                <div style="width: 60px; height: 60px; background: rgba(245, 158, 11, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                    <i class="bi bi-journal-text" style="font-size: 1.8rem; color: #f59e0b;"></i>
+                </div>
+                <h3 style="font-weight: 700; margin-bottom: 10px;">Technical Docs</h3>
+                <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 20px;">Read comprehensive guides, manuals, threat models, and system administration definitions.</p>
+                <button class="btn-action" style="width: 100%; justify-content: center; background: #f59e0b; border-color: #f59e0b; color: white; font-weight: 600;" @onclick="() => _viewDocsMode = true">View Docs</button>
             </div>
         </div>
-    </div>
+
+        <!-- FAQs Section -->
+        <div class="glass-card" style="padding: 30px; border-radius: 12px; border: 1px solid var(--border-current);">
+            <h2 style="margin-bottom: 24px; font-weight: 800; font-size: 1.4rem; display: flex; align-items: center; gap: 10px;">
+                <i class="bi bi-question-circle" style="color: var(--cyber-primary);"></i> Frequently Asked Questions
+            </h2>
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div style="border-bottom: 1px solid var(--border-current); padding-bottom: 16px;">
+                    <div style="font-weight: 700; font-size: 0.98rem; margin-bottom: 8px;">How do I reset my account password?</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">You can update your login password securely by going to the <strong>Settings</strong> tab in the sidebar and opening the <strong>Account Settings</strong> panel.</div>
+                </div>
+                <div style="border-bottom: 1px solid var(--border-current); padding-bottom: 16px;">
+                    <div style="font-weight: 700; font-size: 0.98rem; margin-bottom: 8px;">Is my scanner telemetry and draft history secure?</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">Absolutely. BASTION operates under a zero-trust architecture. All document scans, PowerShell audits, URL safety checks, and LexGuard AI Smart Drafter outputs are stored exclusively in your local SQLite database (<code>bastion.db</code>). No information is transmitted to external telemetry servers.</div>
+                </div>
+                <div>
+                    <div style="font-weight: 700; font-size: 0.98rem; margin-bottom: 8px;">Can other administrators revoke my active logins?</div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">Administrators have the capability to audit all active platform sessions. However, non-admin sessions can be revoked via the Admin Portal, while main Administrator sessions are strictly protected against remote revocation to avoid administrative lockouts.</div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── VIEW 2: AI Live Chat ── -->
+    @if (_viewChatMode)
+    {
+        <div style="display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start;">
+            <!-- Left Panel: Chat Board -->
+            <div class="glass-card" style="padding: 24px; display: flex; flex-direction: column; height: 580px; border-radius: 12px; border: 1px solid var(--border-current);">
+                <!-- Messages List -->
+                <div style="flex-grow: 1; overflow-y: auto; padding-right: 10px; display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+                    @foreach (var msg in _chatHistory)
+                    {
+                        @if (msg.Role == "user")
+                        {
+                            <div style="align-self: flex-end; max-width: 80%; background: var(--cyber-primary); color: white; padding: 12px 16px; border-radius: 12px 12px 0 12px; font-size: 0.92rem; line-height: 1.5; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                                @msg.Content
+                            </div>
+                        }
+                        else
+                        {
+                            <div style="align-self: flex-start; max-width: 80%; background: var(--surface-current); border: 1px solid var(--border-current); color: var(--text-current); padding: 14px 18px; border-radius: 12px 12px 12px 0; font-size: 0.92rem; line-height: 1.5; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                                <div style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: var(--cyber-primary); margin-bottom: 6px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                                    <i class="bi bi-shield-shaded"></i> BASTION Sentinel AI
+                                </div>
+                                <div class="markdown-body">
+                                    @ConvertMarkdownToHtml(msg.Content)
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @if (_isChatTyping)
+                    {
+                        <div style="align-self: flex-start; max-width: 80%; background: var(--surface-current); border: 1px solid var(--border-current); padding: 14px 18px; border-radius: 12px 12px 12px 0; display: flex; align-items: center; gap: 8px;">
+                            <span style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">Sentinel-AI is inspecting platform configuration and thinking...</span>
+                            <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Input area -->
+                <div style="display: flex; gap: 12px; border-top: 1px solid var(--border-current); padding-top: 16px;">
+                    <input type="text" class="input-bastion" style="flex-grow: 1;" placeholder="Ask Sentinel about system status, logins, active configs, or ask it to fix a role/session..." 
+                           @bind="_userChatMessage" @onkeyup="HandleChatKeyup" disabled="@_isChatTyping" />
+                    <button class="btn-action" style="background: var(--cyber-primary); border-color: var(--cyber-primary); color: white; font-weight: 600; padding: 10px 24px;" 
+                            @onclick="SendChatMessage" disabled="@_isChatTyping">
+                        Send <i class="bi bi-send" style="margin-left: 6px;"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Agentic Log Operations Dashboard -->
+            <div class="glass-card" style="padding: 24px; height: 580px; border-radius: 12px; border: 1px solid rgba(6, 182, 212, 0.25); display: flex; flex-direction: column; background: var(--glass-bg);">
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: var(--cyber-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i class="bi bi-cpu"></i> Agentic Operations Log
+                </h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.4; margin-bottom: 16px; border-bottom: 1px solid var(--border-current); padding-bottom: 10px;">
+                    This console registers the real-time execution steps, reasoning decisions, and local C# tool calls executed autonomously by Sentinel-AI.
+                </p>
+
+                <div style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-family: var(--font-mono); font-size: 0.76rem; padding-right: 5px;">
+                    @if (!_agentSteps.Any())
+                    {
+                        <div style="color: var(--text-muted); text-align: center; padding-top: 60px; font-style: italic;">
+                            Console idle. Send a chat query to trace autonomous tool invocations in real-time.
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var step in _agentSteps)
+                        {
+                            @if (step.Contains("Executed:"))
+                            {
+                                <div style="color: #34d399; background: rgba(52, 211, 153, 0.05); padding: 8px; border-radius: 6px; border-left: 2px solid #34d399; line-height: 1.4; word-break: break-all;">
+                                    <strong style="text-transform: uppercase;">[Tool Action]</strong><br />@step
+                                </div>
+                            }
+                            else
+                            {
+                                <div style="color: #38bdf8; background: rgba(56, 189, 248, 0.05); padding: 8px; border-radius: 6px; border-left: 2px solid #38bdf8; line-height: 1.4;">
+                                    <strong style="text-transform: uppercase;">[Reasoning]</strong><br />@step
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── VIEW 3: Support Tickets ── -->
+    @if (_viewTicketsMode)
+    {
+        <div style="display: grid; grid-template-columns: 400px 1fr; gap: 24px; align-items: start;">
+            <!-- Left Panel: Create Ticket Form -->
+            <div class="glass-card" style="padding: 24px; border-radius: 12px; border: 1px solid var(--border-current);">
+                <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                    <i class="bi bi-plus-circle" style="color: #10b981;"></i> Submit Ticket
+                </h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">Ticket Title / Area of Issue</label>
+                        <input type="text" class="input-bastion" placeholder="e.g. Inactive login session / Registration closed" @bind="_newTicketTitle" disabled="@_isTicketSubmitting" />
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px;">Detailed Telemetry Description</label>
+                        <textarea class="input-bastion" rows="5" style="resize: none; font-family: inherit;" placeholder="Please outline the issue or specify the user email and configurations you want the AI agent to verify and resolve." @bind="_newTicketDesc" disabled="@_isTicketSubmitting"></textarea>
+                    </div>
+                    <button class="btn-action" style="background: #10b981; border-color: #10b981; color: white; font-weight: 600; width: 100%; justify-content: center; padding: 12px;" 
+                            @onclick="CreateNewTicketAsync" disabled="@_isTicketSubmitting">
+                        @if (_isTicketSubmitting)
+                        {
+                            <span>AI Agent is investigating...</span>
+                            <div class="spinner-border spinner-border-sm text-light style='margin-left: 6px;'" role="status"></div>
+                        }
+                        else
+                        {
+                            <span>Submit Ticket to AI Solver</span>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Tickets History and AI Logs -->
+            <div class="glass-card" style="padding: 24px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.25); min-height: 500px; display: flex; flex-direction: column;">
+                <h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                    <i class="bi bi-clock-history" style="color: #10b981;"></i> Active Incident List
+                </h3>
+
+                <div style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-right: 5px;">
+                    @if (!_tickets.Any())
+                    {
+                        <div style="text-align: center; color: var(--text-muted); padding-top: 100px; font-style: italic;">
+                            No support tickets filed yet. File a ticket on the left to activate our Agentic AI repair loop.
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var ticket in _tickets)
+                        {
+                            <div class="glass-card" style="padding: 20px; border-radius: 8px; border: 1px solid @(ticket.Status == "Resolved" ? "rgba(16, 185, 129, 0.25)" : "var(--border-current)"); background: var(--surface-current); position: relative;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                                    <div>
+                                        <h4 style="font-size: 1.05rem; font-weight: 800; margin: 0; color: var(--text-current);">@ticket.Title</h4>
+                                        <span style="font-size: 0.72rem; color: var(--text-muted);">Filed by @ticket.Email on @ticket.CreatedAt.ToString("g")</span>
+                                    </div>
+                                    <span style="font-size: 0.72rem; font-weight: 800; padding: 4px 10px; border-radius: 30px; letter-spacing: 0.5px; text-transform: uppercase; background: @(ticket.Status == "Resolved" ? "rgba(16, 185, 129, 0.1)" : "rgba(245, 158, 11, 0.1)"); color: @(ticket.Status == "Resolved" ? "#34d399" : "#fb923c"); border: 1px solid @(ticket.Status == "Resolved" ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)");">
+                                        @ticket.Status
+                                    </span>
+                                </div>
+                                <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.6; margin-bottom: 16px; background: rgba(0,0,0,0.08); padding: 10px 14px; border-radius: 6px; border-left: 2px solid var(--border-current);">
+                                    @ticket.Description
+                                </p>
+                                
+                                @if (!string.IsNullOrEmpty(ticket.AiResolution))
+                                {
+                                    <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 8px; padding: 16px; margin-top: 12px;">
+                                        <div style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; color: #10b981; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; letter-spacing: 0.5px;">
+                                            <i class="bi bi-cpu"></i> Agentic Diagnostic Resolution Log
+                                        </div>
+                                        <div style="font-size: 0.88rem; color: var(--text-current); line-height: 1.6;" class="markdown-body">
+                                            @ConvertMarkdownToHtml(ticket.AiResolution)
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ── VIEW 4: Technical Documentation Hub ── -->
+    @if (_viewDocsMode)
+    {
+        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 30px; align-items: start;">
+            <!-- Sidebar Navigation -->
+            <div class="glass-card" style="padding: 20px; border-radius: 12px; border: 1px solid var(--border-current); display: flex; flex-direction: column; gap: 8px; background: var(--glass-bg);">
+                <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; padding-left: 10px;">Documentation Sections</div>
+                
+                @foreach (var doc in _docs)
+                {
+                    <button style="display: flex; align-items: center; gap: 12px; width: 100%; border: none; outline: none; background: @(_activeDocId == doc.Id ? "rgba(56, 189, 248, 0.1)" : "transparent"); color: @(_activeDocId == doc.Id ? "var(--text-current)" : "var(--text-muted)"); padding: 12px 16px; border-radius: 8px; font-weight: @(_activeDocId == doc.Id ? "700" : "500"); font-size: 0.9rem; text-align: left; cursor: pointer; transition: background 0.2s, color 0.2s; border: 1px solid @(_activeDocId == doc.Id ? "rgba(56, 189, 248, 0.15)" : "transparent");"
+                            @onclick="() => _activeDocId = doc.Id"
+                            onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+                            onmouseout="this.style.background='@(_activeDocId == doc.Id ? "rgba(56, 189, 248, 0.1)" : "transparent")'">
+                        <i class="bi @doc.Icon" style="color: @(_activeDocId == doc.Id ? "var(--cyber-primary)" : "#64748b"); font-size: 1.1rem;"></i>
+                        <span>@doc.Title</span>
+                    </button>
+                }
+            </div>
+
+            <!-- Active Document Content Reader -->
+            <div class="glass-card" style="padding: 40px; border-radius: 12px; border: 1px solid var(--border-current); min-height: 500px; display: flex; flex-direction: column;">
+                @{
+                    var activeDoc = _docs.FirstOrDefault(d => d.Id == _activeDocId);
+                }
+                @if (activeDoc != null)
+                {
+                    <div style="border-bottom: 1px solid var(--border-current); padding-bottom: 20px; margin-bottom: 30px;">
+                        <span style="font-size: 0.72rem; font-weight: 800; background: rgba(56, 189, 248, 0.1); color: #38bdf8; padding: 4px 10px; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase;">BASTION Manual</span>
+                        <h2 style="font-size: 2rem; font-weight: 800; margin: 10px 0 0;">@activeDoc.Title</h2>
+                    </div>
+                    
+                    <div style="color: var(--text-current); font-size: 1.02rem; line-height: 1.8; flex-grow: 1;">
+                        @((MarkupString)activeDoc.HtmlContent)
+                    </div>
+                }
+            </div>
+        </div>
+    }
 </div>
+
+@code {
+    private bool _viewDocsMode;
+    private bool _viewChatMode;
+    private bool _viewTicketsMode;
+    private string _activeDocId = "getting-started";
+    private string? _toastMessage;
+
+    private MarkupString ConvertMarkdownToHtml(string? markdown)
+    {
+        if (string.IsNullOrEmpty(markdown)) return new MarkupString(string.Empty);
+        
+        var lines = markdown.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        var parsedLines = new List<string>();
+        
+        foreach (var line in lines)
+        {
+            var currentLine = line;
+            
+            if (currentLine.StartsWith("#### "))
+            {
+                var headerText = System.Net.WebUtility.HtmlEncode(currentLine.Substring(5).Trim());
+                parsedLines.Add($"<strong style=\"font-size: 1.05rem; display: block; margin-top: 10px; margin-bottom: 4px; color: var(--text-current);\">{headerText}</strong>");
+                continue;
+            }
+            if (currentLine.StartsWith("### "))
+            {
+                var headerText = System.Net.WebUtility.HtmlEncode(currentLine.Substring(4).Trim());
+                parsedLines.Add($"<strong style=\"font-size: 1.15rem; display: block; margin-top: 14px; margin-bottom: 6px; color: var(--cyber-primary);\">{headerText}</strong>");
+                continue;
+            }
+            if (currentLine.StartsWith("## "))
+            {
+                var headerText = System.Net.WebUtility.HtmlEncode(currentLine.Substring(3).Trim());
+                parsedLines.Add($"<strong style=\"font-size: 1.3rem; display: block; margin-top: 18px; margin-bottom: 8px; color: var(--cyber-primary);\">{headerText}</strong>");
+                continue;
+            }
+            if (currentLine.StartsWith("# "))
+            {
+                var headerText = System.Net.WebUtility.HtmlEncode(currentLine.Substring(2).Trim());
+                parsedLines.Add($"<strong style=\"font-size: 1.5rem; display: block; margin-top: 22px; margin-bottom: 10px; color: var(--cyber-primary);\">{headerText}</strong>");
+                continue;
+            }
+            
+            currentLine = System.Net.WebUtility.HtmlEncode(currentLine);
+            
+            while (currentLine.Contains("**"))
+            {
+                int first = currentLine.IndexOf("**");
+                int second = currentLine.IndexOf("**", first + 2);
+                if (second == -1) break;
+                
+                var boldText = currentLine.Substring(first + 2, second - (first + 2));
+                currentLine = currentLine.Remove(first, second + 2 - first);
+                currentLine = currentLine.Insert(first, $"<strong>{boldText}</strong>");
+            }
+            
+            if (currentLine.StartsWith("- "))
+            {
+                currentLine = "• " + currentLine.Substring(2);
+            }
+            else if (currentLine.StartsWith("* "))
+            {
+                currentLine = "• " + currentLine.Substring(2);
+            }
+            
+            parsedLines.Add(currentLine);
+        }
+        
+        return new MarkupString(string.Join("<br />", parsedLines));
+    }
+
+    // Chat States
+    private List<GroqChatMessage> _chatHistory = new();
+    private List<string> _agentSteps = new();
+    private string _userChatMessage = string.Empty;
+    private bool _isChatTyping;
+
+    // Tickets States
+    private List<SupportTicket> _tickets = new();
+    private string _newTicketTitle = string.Empty;
+    private string _newTicketDesc = string.Empty;
+    private bool _isTicketSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTicketsAsync();
+    }
+
+    private async Task LoadTicketsAsync()
+    {
+        try
+        {
+            var currentUserEmail = AuthService.CurrentUser?.Email ?? "guest@bastion.app";
+            _tickets = await DbContext.SupportTickets
+                .Where(t => t.Email == currentUserEmail)
+                .OrderByDescending(t => t.CreatedAt)
+                .ToListAsync();
+        }
+        catch
+        {
+            // Fallback for startup initialization
+            _tickets = new List<SupportTicket>();
+        }
+    }
+
+    private void ReturnToHome()
+    {
+        _viewDocsMode = false;
+        _viewChatMode = false;
+        _viewTicketsMode = false;
+        _toastMessage = null;
+    }
+
+    private void StartChat()
+    {
+        _viewChatMode = true;
+        _chatHistory.Clear();
+        _agentSteps.Clear();
+        _chatHistory.Add(new GroqChatMessage 
+        { 
+            Role = "assistant", 
+            Content = "Greetings. I am BASTION-Sentinel. As BASTION's active support agent, I have secure access to local tools to inspect logins and configurations. How can I assist you with your fortress configurations today?" 
+        });
+    }
+
+    private void StartTickets()
+    {
+        _viewTicketsMode = true;
+        _newTicketTitle = string.Empty;
+        _newTicketDesc = string.Empty;
+    }
+
+    private async Task SendChatMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_userChatMessage)) return;
+
+        var prompt = _userChatMessage.Trim();
+        _userChatMessage = string.Empty;
+        _chatHistory.Add(new GroqChatMessage { Role = "user", Content = prompt });
+        _isChatTyping = true;
+        _agentSteps.Clear();
+
+        StateHasChanged();
+
+        try
+        {
+            // Run the Agentic Reasoning Loop
+            var result = await AgentService.ProcessAgenticTaskAsync(prompt, _chatHistory.SkipLast(1).ToList());
+            
+            _chatHistory.Add(new GroqChatMessage { Role = "assistant", Content = result.Response });
+            _agentSteps = result.AgentSteps;
+        }
+        catch (Exception ex)
+        {
+            _chatHistory.Add(new GroqChatMessage 
+            { 
+                Role = "assistant", 
+                Content = $"Notice: I encountered an issue invoking the Groq reasoning engine: {ex.Message}. Check your appsettings API keys to activate external loops." 
+            });
+        }
+        finally
+        {
+            _isChatTyping = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleChatKeyup(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendChatMessage();
+        }
+    }
+
+    private async Task CreateNewTicketAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newTicketTitle) || string.IsNullOrWhiteSpace(_newTicketDesc))
+        {
+            _toastMessage = "Notice: Title and description are required to dispatch a support ticket.";
+            return;
+        }
+
+        var currentUserEmail = AuthService.CurrentUser?.Email ?? "guest@bastion.app";
+        var title = _newTicketTitle.Trim();
+        var desc = _newTicketDesc.Trim();
+
+        _newTicketTitle = string.Empty;
+        _newTicketDesc = string.Empty;
+        _isTicketSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            // 1. Create and save the support ticket to SQLite
+            var ticket = new SupportTicket
+            {
+                Email = currentUserEmail,
+                Title = title,
+                Description = desc,
+                Status = "Open",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            DbContext.SupportTickets.Add(ticket);
+            await DbContext.SaveChangesAsync();
+
+            // 2. Trigger the AI Agent reasoning loop immediately in the background
+            var agentResult = await AgentService.ProcessAgenticTaskAsync(
+                $"[SUPPORT TICKET SUBMITTED] User Email: {currentUserEmail}. Issue Title: {title}. Details: {desc}", 
+                new List<GroqChatMessage>());
+
+            // 3. Update the ticket status & save diagnostic logs
+            var dbTicket = await DbContext.SupportTickets.FindAsync(ticket.Id);
+            if (dbTicket != null)
+            {
+                dbTicket.Status = "Resolved";
+                
+                // Formulate resolution markdown trace
+                var mdResolution = $"**Sentinel AI Agent Action Summary:**\n\n{agentResult.Response}\n\n";
+                if (agentResult.AgentSteps.Any())
+                {
+                    mdResolution += "**Diagnostic Traces Checked:**\n";
+                    foreach (var step in agentResult.AgentSteps)
+                    {
+                        mdResolution += $"- *{step}*\n";
+                    }
+                }
+                
+                dbTicket.AiResolution = mdResolution;
+                await DbContext.SaveChangesAsync();
+            }
+
+            _toastMessage = "Support ticket processed, investigated, and successfully resolved by BASTION-Sentinel AI!";
+            await LoadTicketsAsync();
+        }
+        catch (Exception ex)
+        {
+            _toastMessage = $"Support ticket created, but AI solver encountered an issue: {ex.Message}";
+            await LoadTicketsAsync();
+        }
+        finally
+        {
+            _isTicketSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private class DocItem
+    {
+        public string Id { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public string HtmlContent { get; set; } = "";
+    }
+
+    private readonly List<DocItem> _docs = new()
+    {
+        new()
+        {
+            Id = "getting-started",
+            Title = "Getting Started",
+            Icon = "bi-rocket-takeoff",
+            HtmlContent = @"
+                <p>Welcome to <strong>BASTION</strong>, a state-of-the-art cybersecurity and compliance intelligence suite. Engineered on a foundation of strict modular components and local-first data isolation, BASTION delivers high-end intelligence panels across four distinct threat landscapes.</p>
+                
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>Key Architectural Pillars:</h3>
+                <ul>
+                    <li><strong style='color: var(--cyber-primary);'>Zero-Coupling Modules:</strong> Subsystems are entirely decoupled. Should the legal AI processing nodes temporarily fluctuate, the local device scanners and educational simulators remain completely operational.</li>
+                    <li><strong style='color: var(--cyber-primary);'>Local Storage First:</strong> To prevent enterprise data loss or sensitive telemetry leak, all transactions, generated contracts, audit logs, and scan results are saved in SQLite (<code>bastion.db</code>).</li>
+                    <li><strong style='color: var(--cyber-primary);'>SignalR Live Telemetry:</strong> All active sessions and administrator commands synchronize dynamically via SignalR hubs, enabling instant cross-client updates.</li>
+                </ul>
+
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>Standard Operation Checklist:</h3>
+                <ol>
+                    <li>Complete your initial account registration and configure multi-factor authentication details.</li>
+                    <li>Head to <strong>CyberShield</strong> to scan host process trees and check for listening port anomalies.</li>
+                    <li>Audit incoming legal contracts in <strong>LexGuard</strong> to check for hidden compliance risk liabilities.</li>
+                    <li>Verify website safety rankings in <strong>FinShield</strong> prior to submitting card parameters.</li>
+                </ol>"
+        },
+        new()
+        {
+            Id = "cybershield",
+            Title = "CyberShield",
+            Icon = "bi-shield-check",
+            HtmlContent = @"
+                <p><strong>CyberShield</strong> delivers comprehensive host device security telemetry. Focused on Windows operating system diagnostics, CyberShield guides users through self-contained PowerShell queries to uncover vulnerabilities.</p>
+                
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>Performing System Audits:</h3>
+                <p>CyberShield scans the host system in two simple interactive steps:</p>
+                <ol>
+                    <li>Copy the read-only PowerShell diagnostics block using the integrated copy button. This command queries listening TCP/UDP port associations, CPU process lists, active startup configurations, system info, and OS hotfixes.</li>
+                    <li>Paste the shell terminal's raw standard output into the paste container and click <strong>Analyze System</strong>.</li>
+                </ol>
+
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>IP Geolocation & ISP Audits:</h3>
+                <p>Enter any IPv4 or IPv6 address to trigger real-time geo-IP telemetry scans. This queries geographical location data, ISP designations, and threat indices associated with specific remote nodes.</p>
+
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>Password Breach Verifications:</h3>
+                <p>Uses deep security lookup parameters to verify if custom passwords or account credentials have been previously leaked in known data breaches.</p>"
+        },
+        new()
+        {
+            Id = "lexguard",
+            Title = "LexGuard AI",
+            Icon = "bi-file-earmark-text",
+            HtmlContent = @"
+                <p><strong>LexGuard</strong> infuses standard legal contract compliance audits with advanced semantic AI intelligence. Using natural language models, LexGuard helps users identify hidden risks in corporate agreements.</p>
+                
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>Document Analysis Engine:</h3>
+                <p>Upload legal documents in PDF or DOCX format to trigger the parsing pipeline. The engine analyzes contract clauses for:</p>
+                <ul>
+                    <li><strong style='color: #f87171;'>Indemnification Clauses:</strong> Highlights clauses that shift extreme financial liability to your operations.</li>
+                    <li><strong style='color: #fb923c;'>Limitation of Liability:</strong> Audits caps on damages and ensures adequate balance.</li>
+                    <li><strong style='color: var(--lex-primary);'>Termination Conditions:</strong> Locates one-sided termination clauses.</li>
+                </ul>
+
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>LexGuard Smart Drafter:</h3>
+                <p>The Smart Drafter lets you write prompt templates and dynamically construct legally compliant contracts. Completed drafts are saved in the <strong>History</strong> section with a dedicated draft score, allowing users to return to drafts later or export them as a publication-ready PDF using the integrated QuestPDF export engine.</p>"
+        },
+        new()
+        {
+            Id = "finshield",
+            Title = "FinShield",
+            Icon = "bi-currency-dollar",
+            HtmlContent = @"
+                <p><strong>FinShield</strong> serves as a robust outer perimeter to insulate users from transaction fraud, social engineering scams, and deceptive deep-links.</p>
+                
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>URL Safety Scanner:</h3>
+                <p>Submit any website URL link to scan its security state. The scanner checks the domain name against active fraudulent registries, phishing list providers, and suspicious URL pattern-matching rules to deliver an instant security score.</p>
+
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>Phishing Message Classifier:</h3>
+                <p>Analyze incoming SMS, bank notices, or suspicious corporate emails. The NLP semantic model categorizes text inputs as safe or dangerous phishing messages, providing a confidence level and breakdown of psychological trigger words (e.g. artificial urgency, threats of lockout, unexpected refund requests).</p>
+
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>Localized Scam Alerts:</h3>
+                <p>Browse regional community threat alerts. Users and administrative feeds contribute real-time warnings on active ATM compromises, local phone spoofing operations, and payment terminal compromises sorted by geographical vicinity.</p>"
+        },
+        new()
+        {
+            Id = "hackerlab",
+            Title = "HackerLab",
+            Icon = "bi-controller",
+            HtmlContent = @"
+                <p><strong>HackerLab</strong> is BASTION's highly engaging training proving grounds, designed to hone user security awareness through interactive, hands-on academy challenges.</p>
+                
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>Interactive Academies:</h3>
+                <p>Includes five dedicated security disciplines, each offering multi-level simulation scenarios:</p>
+                <ul>
+                    <li><strong>Phishing:</strong> Spotting subtle anomalies in headers, domain redirects, and email forms.</li>
+                    <li><strong>Network:</strong> Identifying rogue access points, packet sniffing indicators, and port scanning patterns.</li>
+                    <li><strong>Password:</strong> Cracking schemes, multi-factor bypasses, and security questions safety.</li>
+                    <li><strong>Physical:</strong> Tailgating defense, card skimming identification, and social engineering.</li>
+                    <li><strong>Web Security:</strong> SQL injections, XSS vulnerabilities, and parameter manipulations.</li>
+                </ul>
+
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>XP, Achievements & Badges:</h3>
+                <p>Completing training challenges awards immediate score feedback, ranks, and custom collectible achievements (e.g., *Locksmith*, *Sentinel*, *Social Architect*) to elevate your global security credentials.</p>"
+        },
+        new()
+        {
+            Id = "administration",
+            Title = "Administration",
+            Icon = "bi-gear",
+            HtmlContent = @"
+                <p>The <strong>Admin Portal</strong> is the central hub for administrative configuration, real-time auditing, and access control management in the BASTION deployment.</p>
+                
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>Active Session Auditing:</h3>
+                <p>The Active Sessions panel lists all active browser sessions, including login timestamps, IP locations, and device types. Administrators can revoke active user logins dynamically. Session tear-down is backed by automated SignalR connection lifetime events.</p>
+
+                <h3 style='margin-top: 30px; font-weight: 700; font-size: 1.25rem;'>System Hardening Controls:</h3>
+                <ul>
+                    <li><strong>Maintenance Mode:</strong> Restricts all regular user access dynamically. Logged-in non-admin sessions are immediately presented with a lock screen while administrators retain full access to continue maintenance configurations.</li>
+                    <li><strong>Registration Control:</strong> Blocks new account creation globally when toggled to a closed state, displaying a premium security closed prompt.</li>
+                    <li><strong>Default User Roles:</strong> Configures automated system permissions for all newly created accounts.</li>
+                </ul>"
+        }
+    };
+}

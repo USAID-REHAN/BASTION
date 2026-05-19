@@ -6,19 +6,21 @@
     <div class="lex-history-list">
         @foreach (var analysis in Analyses)
         {
-            var riskClass = analysis.RiskLevel?.ToLower() switch
+            bool isDraft = analysis.DocumentType?.ToLower() == "draft";
+
+            var riskClass = isDraft ? "draft" : (analysis.RiskLevel?.ToLower() switch
             {
                 "danger" => "danger",
                 "caution" => "caution",
                 _ => "safe"
-            };
+            });
 
-            var riskIcon = analysis.RiskLevel?.ToLower() switch
+            var riskIcon = isDraft ? "bi-pen" : (analysis.RiskLevel?.ToLower() switch
             {
                 "danger" => "bi-exclamation-triangle",
                 "caution" => "bi-exclamation-circle",
                 _ => "bi-shield-check"
-            };
+            });
 
             <div class="lex-history-item" @onclick="() => OnViewAnalysis.InvokeAsync(analysis)">
                 <div class="lex-history-icon @riskClass">
@@ -34,8 +36,8 @@
                     </div>
                 </div>
 
-                <div class="lex-history-score @riskClass">
-                    @analysis.RiskScore
+                <div class="lex-history-score @riskClass" style="@(isDraft ? "font-size: 0.8rem; font-weight: 800;" : "")">
+                    @(isDraft ? "DRAFT" : analysis.RiskScore.ToString())
                 </div>
 
                 <div class="lex-history-actions">

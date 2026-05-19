@@ -136,11 +136,15 @@
                                     <td>
                                         @if (session.IsActive)
                                         {
-                                            <span class="badge-bastion badge-safe">Active</span>
+                                            <span class="badge-bastion badge-safe">ACTIVE</span>
+                                        }
+                                        else if (session.IsRevokedByAdmin)
+                                        {
+                                            <span class="badge-bastion badge-danger">REVOKED</span>
                                         }
                                         else
                                         {
-                                            <span class="badge-bastion badge-danger">Revoked</span>
+                                            <span class="badge-bastion" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8;">TERMINATED</span>
                                         }
                                     </td>
                                     <td>

@@ -34,6 +34,7 @@ public class BastionDbContext : DbContext
     public DbSet<UserPreference> UserPreferences => Set<UserPreference>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<UserSession> UserSessions => Set<UserSession>();
+    public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -106,6 +107,12 @@ public class BastionDbContext : DbContext
         });
 
         modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Email);
+        });
+
+        modelBuilder.Entity<SupportTicket>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Email);
