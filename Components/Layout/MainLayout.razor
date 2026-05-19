@@ -157,7 +157,7 @@ else
         InvokeAsync(() => {
             if (!AuthService.IsAuthenticated)
             {
-                Navigation.NavigateTo("/login?reason=revoked", forceLoad: true);
+                Navigation.NavigateTo($"/login?reason={AuthService.LastSignOutReason}", forceLoad: true);
             }
             StateHasChanged();
         });

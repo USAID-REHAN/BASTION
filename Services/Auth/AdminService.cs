@@ -44,13 +44,26 @@ public class AdminService
         if (user.IsLockedOut)
         {
             user.LockoutEnd = DateTime.UtcNow.AddYears(100); // Practical ban
+
+            // Revoke all active sessions in the database immediately
+            var activeSessions = _dbContext.UserSessions
+                .Where(s => s.Email == email && !s.IsRevoked)
+                .ToList();
+            foreach (var session in activeSessions)
+            {
+                session.IsRevoked = true;
+                session.IsRevokedByAdmin = true;
+            }
+            _dbContext.SaveChanges();
+
+            // Kick them out instantly across all browsers in real-time!
+            AuthService.TriggerSessionRevocation(email, isBan: true);
         }
         else
         {
             user.LockoutEnd = null;
+            _dbContext.SaveChanges();
         }
-        
-        _dbContext.SaveChanges();
         
         LogAction(email, "Ban/Unban", user.IsLockedOut ? "User banned" : "User unbanned");
         return true;

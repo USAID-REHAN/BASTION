@@ -15,7 +15,8 @@ public class AuthService : IDisposable
     private UserAccount? _currentUser;
     private int? _currentSessionId;
     public event Action? OnAuthStateChanged;
-    public static event Action<string>? OnSessionRevoked;
+    public static event Action<string, bool>? OnSessionRevoked;
+    public string LastSignOutReason { get; private set; } = "revoked";
 
     public bool IsAuthenticated => _currentUser != null;
     public bool IsAdmin => _currentUser?.Role == "Admin";
@@ -27,13 +28,19 @@ public class AuthService : IDisposable
         OnSessionRevoked += HandleSessionRevoked;
     }
 
-    private void HandleSessionRevoked(string email)
+    private void HandleSessionRevoked(string email, bool isBan)
     {
         if (_currentUser?.Email == email)
         {
             _currentUser = null;
+            LastSignOutReason = isBan ? "banned" : "revoked";
             OnAuthStateChanged?.Invoke();
         }
+    }
+
+    public static void TriggerSessionRevocation(string email, bool isBan = false)
+    {
+        OnSessionRevoked?.Invoke(email, isBan);
     }
 
     public (bool Success, string Message) Register(string fullName, string email, string password, string city)
@@ -211,7 +218,7 @@ public class AuthService : IDisposable
 
         session.IsActive = false;
         session.IsRevokedByAdmin = true;
-        OnSessionRevoked?.Invoke(session.UserEmail);
+        OnSessionRevoked?.Invoke(session.UserEmail, false);
     }
 
     public void Dispose()
