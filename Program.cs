@@ -41,6 +41,7 @@ builder.Services.AddSingleton<GroqService>();
 builder.Services.AddSingleton<GroqVisionService>();
 
 // ── FinShield Services (Finance) ──
+builder.Services.AddScoped<FinShieldSessionState>();
 builder.Services.AddHttpClient<FinShieldService>()
     .ConfigureHttpClient(client =>
     {
@@ -100,6 +101,8 @@ using (var scope = app.Services.CreateScope())
             db.SaveChanges();
         }
 
+        SeedLabs(db);
+
         // Clean up/revoke all active sessions from previous runs of the server on startup
         var staleSessions = db.UserSessions.Where(s => !s.IsRevoked).ToList();
         foreach (var s in staleSessions)
@@ -124,6 +127,8 @@ using (var scope = app.Services.CreateScope())
             MfaEnabled = false
         });
         db.SaveChanges();
+
+        SeedLabs(db);
 
         // Safely check stale sessions on newly created DB (will be empty, but maintains logic consistency)
         var staleSessions = db.UserSessions.Where(s => !s.IsRevoked).ToList();
@@ -152,3 +157,32 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+static void SeedLabs(BastionDbContext db)
+{
+    var labs = new[]
+    {
+        new BASTION.Models.Lab { Id = 1, Title = "Password & Auth Security", Description = "Authentication hardening and password safety.", XpReward = 100 },
+        new BASTION.Models.Lab { Id = 2, Title = "Network & WiFi Safety", Description = "Network exposure and WiFi risk training.", XpReward = 100 },
+        new BASTION.Models.Lab { Id = 3, Title = "Social Engineering", Description = "Phishing and manipulation defense.", XpReward = 100 },
+        new BASTION.Models.Lab { Id = 4, Title = "Data Privacy", Description = "Sensitive data handling and privacy defense.", XpReward = 100 },
+        new BASTION.Models.Lab { Id = 5, Title = "Malware Defense", Description = "Malware detection and response fundamentals.", XpReward = 100 }
+    };
+
+    foreach (var lab in labs)
+    {
+        var existing = db.Labs.FirstOrDefault(l => l.Id == lab.Id);
+        if (existing == null)
+        {
+            db.Labs.Add(lab);
+        }
+        else
+        {
+            existing.Title = lab.Title;
+            existing.Description = lab.Description;
+            existing.XpReward = lab.XpReward;
+        }
+    }
+
+    db.SaveChanges();
+}

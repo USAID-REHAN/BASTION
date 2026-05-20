@@ -160,6 +160,13 @@ Rules:
         };
 
         _db.LexGuardAnalyses.Add(record);
+        _db.AuditLogs.Add(new AuditLog
+        {
+            Email = userId,
+            Action = "LexGuard Document Analysis",
+            Timestamp = DateTime.UtcNow,
+            Details = $"Analyzed {fileName} with risk score {record.RiskScore}"
+        });
         await _db.SaveChangesAsync();
 
         return (result, record, text);
@@ -218,17 +225,31 @@ Rules:
     // ── FEATURE 5: Document Comparison ──
     public async Task<string> CompareDocumentsAsync(string textA, string textB)
     {
-        var prompt = "Compare Version A and Version B of the following document. Do not just list text differences. Explain the LEGAL IMPLICATIONS of the changes. Which party benefits from the changes? What new risks were introduced? Use Markdown formatting with clear headers.\n\nVERSION A:\n" + textA + "\n\nVERSION B:\n" + textB;
+        var prompt = "Compare Version A and Version B of the following document. Do not just list text differences. Explain the LEGAL IMPLICATIONS of the changes. Which party benefits from the changes? What new risks were introduced? DO NOT use any '#' characters or markdown headings in your output. Use double asterisks for bolding, bullet points, or lists for headings/emphasis.\n\nVERSION A:\n" + textA + "\n\nVERSION B:\n" + textB;
         if (prompt.Length > 60000) prompt = prompt[..60000] + "[Truncated]";
-        return await _groq.ChatAsync("You are an expert contract reviewer.", prompt, 0.2);
+        var response = await _groq.ChatAsync("You are an expert contract reviewer.", prompt, 0.2);
+        return RemoveHashCharacters(response);
     }
 
     // ── FEATURE 6: Compliance Auditing ──
     public async Task<string> AuditComplianceAsync(string documentText, string framework)
     {
-        var prompt = $"Audit the following document for compliance against {framework} (e.g., GDPR, CCPA, HIPAA). Identify missing required clauses, non-compliant clauses, and give actionable recommendations to fix them. Use Markdown.\n\nDOCUMENT:\n" + documentText;
+        var prompt = $"Audit the following document for compliance against {framework} (e.g., GDPR, CCPA, HIPAA). Identify missing required clauses, non-compliant clauses, and give actionable recommendations to fix them. DO NOT use any '#' characters or markdown headings in your output. Use double asterisks for bolding, bullet points, or lists for headings/emphasis.\n\nDOCUMENT:\n" + documentText;
         if (prompt.Length > 50000) prompt = prompt[..50000] + "[Truncated]";
-        return await _groq.ChatAsync("You are a strict compliance auditor.", prompt, 0.1);
+        var response = await _groq.ChatAsync("You are a strict compliance auditor.", prompt, 0.1);
+        return RemoveHashCharacters(response);
+    }
+
+    public static string RemoveHashCharacters(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return string.Empty;
+
+        return text
+            .Replace("#", string.Empty)
+            .Replace("＃", string.Empty)
+            .Replace("&#35;", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("&#x23;", string.Empty, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string ExtractJson(string text)

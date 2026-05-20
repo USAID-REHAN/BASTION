@@ -106,6 +106,12 @@ public class BastionDbContext : DbContext
             entity.HasKey(e => e.Email);
         });
 
+        modelBuilder.Entity<UserSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Email);
+        });
+
         modelBuilder.Entity<Notification>(entity =>
         {
             entity.HasKey(e => e.Id);

@@ -1,4 +1,6 @@
+using BASTION.Data;
 using BASTION.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace BASTION.Services.Finance;
 
@@ -7,6 +9,10 @@ namespace BASTION.Services.Finance;
 /// </summary>
 public class FinShieldModule : IModule
 {
+    private readonly BastionDbContext _db;
+
+    public FinShieldModule(BastionDbContext db) => _db = db;
+
     public string Name => "FinShield";
     public string Icon => "bi-currency-exchange";
     public string RouteUrl => "/finshield";
@@ -15,9 +21,20 @@ public class FinShieldModule : IModule
     public string CssClass => "module-fin";
     public int Order => 5;
 
-    public Task<int> GetScoreAsync(string userId)
+    public async Task<int> GetScoreAsync(string userId)
     {
-        // TODO: Compute FinShield protection score for this user
-        return Task.FromResult(0);
+        var since = DateTime.UtcNow.AddDays(-30);
+        var urlScans = await _db.UrlScanLogs
+            .Where(s => s.Email == userId && s.ScannedAt >= since)
+            .ToListAsync();
+        var paymentScans = await _db.PaymentPageAnalyses
+            .Where(s => s.Email == userId && s.AnalyzedAt >= since)
+            .ToListAsync();
+
+        var total = urlScans.Count + paymentScans.Count;
+        if (total == 0) return 0;
+
+        var highRisk = urlScans.Count(s => s.RiskScore >= 70) + paymentScans.Count(s => s.RiskScore >= 70);
+        return Math.Clamp(35 + Math.Min(total * 10, 50) - (highRisk * 5), 0, 100);
     }
 }

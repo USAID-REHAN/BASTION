@@ -1,4 +1,6 @@
+using BASTION.Data;
 using BASTION.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace BASTION.Services.Security;
 
@@ -7,6 +9,10 @@ namespace BASTION.Services.Security;
 /// </summary>
 public class CyberShieldModule : IModule
 {
+    private readonly BastionDbContext _db;
+
+    public CyberShieldModule(BastionDbContext db) => _db = db;
+
     public string Name => "CyberShield";
     public string Icon => "bi-shield-check";
     public string RouteUrl => "/cybershield";
@@ -15,9 +21,12 @@ public class CyberShieldModule : IModule
     public string CssClass => "module-cyber";
     public int Order => 3;
 
-    public Task<int> GetScoreAsync(string userId)
+    public async Task<int> GetScoreAsync(string userId)
     {
-        // TODO: Compute CyberShield protection score for this user
-        return Task.FromResult(0);
+        var recentScans = await _db.SecurityScanLogs
+            .Where(s => s.Email == userId && s.CreatedAt >= DateTime.UtcNow.AddDays(-30))
+            .CountAsync();
+
+        return recentScans == 0 ? 0 : Math.Clamp(40 + Math.Min(recentScans * 12, 60), 0, 100);
     }
 }

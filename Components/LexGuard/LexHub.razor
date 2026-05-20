@@ -307,19 +307,54 @@
                 <i class="bi bi-file-diff"></i> AI Document Comparison
             </div>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
-                Paste two versions of a document to instantly analyze the legal implications of the changes.
+                Upload two versions of a document to instantly analyze the legal implications of the changes.
             </p>
-            <div style="display: flex; gap: 16px;">
-                <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-                    <label style="font-weight: 500; font-size: 0.9rem;">Version A (Original)</label>
-                    <textarea class="gate-input" style="min-height: 150px; resize: vertical;" placeholder="Paste text of Version A..." @bind="_compareTextA"></textarea>
+            <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 8px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-current); padding: 20px; border-radius: 12px; text-align: center; justify-content: center; min-height: 150px; transition: all 0.3s ease;">
+                    <div style="font-size: 2rem; color: #D97706;"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                    <label style="font-weight: 600; font-size: 0.95rem; color: var(--text-current);">Version A (Original PDF/DOCX)</label>
+                    <div style="position: relative; overflow: hidden; display: inline-block; margin: 8px auto;">
+                        <InputFile OnChange="OnCompareFileASelected" accept=".pdf,.docx" style="font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.2); border: 1px solid var(--border-current); padding: 8px 12px; border-radius: 6px; cursor: pointer;" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_compareFileNameA))
+                    {
+                        <div style="font-size: 0.85rem; color: #34D399; margin-top: 4px; word-break: break-all;"><i class="bi bi-check-circle-fill"></i> Loaded: @_compareFileNameA</div>
+                    }
                 </div>
-                <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-                    <label style="font-weight: 500; font-size: 0.9rem;">Version B (Modified)</label>
-                    <textarea class="gate-input" style="min-height: 150px; resize: vertical;" placeholder="Paste text of Version B..." @bind="_compareTextB"></textarea>
+                <div style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 8px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-current); padding: 20px; border-radius: 12px; text-align: center; justify-content: center; min-height: 150px; transition: all 0.3s ease;">
+                    <div style="font-size: 2rem; color: #D97706;"><i class="bi bi-file-earmark-arrow-up"></i></div>
+                    <label style="font-weight: 600; font-size: 0.95rem; color: var(--text-current);">Version B (Modified PDF/DOCX)</label>
+                    <div style="position: relative; overflow: hidden; display: inline-block; margin: 8px auto;">
+                        <InputFile OnChange="OnCompareFileBSelected" accept=".pdf,.docx" style="font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.2); border: 1px solid var(--border-current); padding: 8px 12px; border-radius: 6px; cursor: pointer;" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_compareFileNameB))
+                    {
+                        <div style="font-size: 0.85rem; color: #34D399; margin-top: 4px; word-break: break-all;"><i class="bi bi-check-circle-fill"></i> Loaded: @_compareFileNameB</div>
+                    }
                 </div>
             </div>
-            <button class="btn-lex btn-lex-primary" style="margin-top: 16px;" @onclick="CompareDocuments" disabled="@(_isComparing || string.IsNullOrWhiteSpace(_compareTextA) || string.IsNullOrWhiteSpace(_compareTextB))">
+
+            @if (!string.IsNullOrEmpty(_compareTextA) || !string.IsNullOrEmpty(_compareTextB))
+            {
+                <div style="display: flex; gap: 16px; margin-top: 20px; flex-wrap: wrap;">
+                    @if (!string.IsNullOrEmpty(_compareTextA))
+                    {
+                        <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Version A Extracted Preview:</label>
+                            <textarea class="gate-input" style="min-height: 100px; font-size: 0.8rem; background: rgba(0,0,0,0.15);" readonly>@(_compareTextA.Length > 2000 ? _compareTextA[..2000] + "\n...[truncated preview]" : _compareTextA)</textarea>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(_compareTextB))
+                    {
+                        <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px;">
+                            <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Version B Extracted Preview:</label>
+                            <textarea class="gate-input" style="min-height: 100px; font-size: 0.8rem; background: rgba(0,0,0,0.15);" readonly>@(_compareTextB.Length > 2000 ? _compareTextB[..2000] + "\n...[truncated preview]" : _compareTextB)</textarea>
+                        </div>
+                    }
+                </div>
+            }
+
+            <button class="btn-lex btn-lex-primary" style="margin-top: 20px;" @onclick="CompareDocuments" disabled="@(_isComparing || string.IsNullOrWhiteSpace(_compareTextA) || string.IsNullOrWhiteSpace(_compareTextB))">
                 @if (_isComparing) { <span class="lex-processing-spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></span> } else { <i class="bi bi-magic"></i> } Compare Documents
             </button>
             
@@ -349,16 +384,18 @@
                 <i class="bi bi-shield-check"></i> Compliance Auditor
             </div>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
-                Strictly audit a document for compliance against standard regulatory frameworks.
+                Upload a document to strictly audit it for compliance against standard regulatory frameworks.
             </p>
-            <div style="display: flex; gap: 16px; align-items: center;">
-                <label style="font-weight: 500; font-size: 0.9rem;">Framework:</label>
-                <select class="gate-input" style="width: 200px; margin: 0;" @bind="_auditFramework">
-                    <option value="GDPR">GDPR (Europe)</option>
-                    <option value="CCPA">CCPA (California)</option>
-                    <option value="HIPAA">HIPAA (Healthcare)</option>
-                    <option value="PCI-DSS">PCI-DSS (Payments)</option>
-                </select>
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <label style="font-weight: 500; font-size: 0.9rem;">Framework:</label>
+                    <select class="gate-input" style="width: 200px; margin: 0;" @bind="_auditFramework">
+                        <option value="GDPR">GDPR (Europe)</option>
+                        <option value="CCPA">CCPA (California)</option>
+                        <option value="HIPAA">HIPAA (Healthcare)</option>
+                        <option value="PCI-DSS">PCI-DSS (Payments)</option>
+                    </select>
+                </div>
                 @if (!string.IsNullOrEmpty(_currentRawText))
                 {
                     <button class="btn-lex btn-lex-ghost" @onclick="LoadAnalyzerTextForAudit" style="font-size: 0.8rem; padding: 4px 12px;">
@@ -366,9 +403,28 @@
                     </button>
                 }
             </div>
-            <textarea class="gate-input" style="min-height: 150px; resize: vertical; margin-top: 16px;" placeholder="Paste the policy or contract text here to audit..." @bind="_auditText"></textarea>
+
+            <div style="margin-top: 20px; background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--border-current); padding: 24px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; min-height: 150px; transition: all 0.3s ease;">
+                <div style="font-size: 2.5rem; color: #D97706;"><i class="bi bi-file-earmark-shield"></i></div>
+                <label style="font-weight: 600; font-size: 0.95rem; color: var(--text-current);">Upload Document to Audit (PDF/DOCX)</label>
+                <div style="position: relative; overflow: hidden; display: inline-block; margin: 8px auto;">
+                    <InputFile OnChange="OnAuditFileSelected" accept=".pdf,.docx" style="font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.2); border: 1px solid var(--border-current); padding: 8px 12px; border-radius: 6px; cursor: pointer;" />
+                </div>
+                @if (!string.IsNullOrEmpty(_auditFileName))
+                {
+                    <div style="font-size: 0.85rem; color: #34D399; margin-top: 4px; word-break: break-all;"><i class="bi bi-check-circle-fill"></i> Loaded: @_auditFileName</div>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(_auditText))
+            {
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 20px;">
+                    <label style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Extracted Preview:</label>
+                    <textarea class="gate-input" style="min-height: 120px; font-size: 0.8rem; background: rgba(0,0,0,0.15);" readonly>@(_auditText.Length > 2000 ? _auditText[..2000] + "\n...[truncated preview]" : _auditText)</textarea>
+                </div>
+            }
             
-            <button class="btn-lex btn-lex-primary" style="margin-top: 16px;" @onclick="AuditCompliance" disabled="@(_isAuditing || string.IsNullOrWhiteSpace(_auditText))">
+            <button class="btn-lex btn-lex-primary" style="margin-top: 20px;" @onclick="AuditCompliance" disabled="@(_isAuditing || string.IsNullOrWhiteSpace(_auditText))">
                 @if (_isAuditing) { <span class="lex-processing-spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></span> } else { <i class="bi bi-shield-check"></i> } Run Audit
             </button>
             
@@ -431,6 +487,8 @@
     private bool _isGeneratingDraftPdf;
 
     // Compare State
+    private string _compareFileNameA = "";
+    private string _compareFileNameB = "";
     private string _compareTextA = "";
     private string _compareTextB = "";
     private string _compareResult = "";
@@ -438,6 +496,7 @@
     private bool _isComparing;
 
     // Audit State
+    private string _auditFileName = "";
     private string _auditText = "";
     private string _auditFramework = "GDPR";
     private string _auditResult = "";
@@ -664,6 +723,13 @@
             };
 
             Db.LexGuardAnalyses.Add(record);
+            Db.AuditLogs.Add(new BASTION.Models.AuditLog
+            {
+                Email = userId,
+                Action = "LexGuard Draft Created",
+                Timestamp = DateTime.UtcNow,
+                Details = $"Created draft {documentName}"
+            });
             await Db.SaveChangesAsync();
             await LoadHistory(); // Refresh history immediately
         }
@@ -780,7 +846,8 @@
 
         try
         {
-            _compareResult = await AnalysisService.CompareDocumentsAsync(_compareTextA, _compareTextB);
+            _compareResult = BASTION.Services.Legal.DocumentAnalysisService.RemoveHashCharacters(
+                await AnalysisService.CompareDocumentsAsync(_compareTextA, _compareTextB));
         }
         catch (Exception ex)
         {
@@ -798,6 +865,7 @@
         if (!string.IsNullOrEmpty(_currentRawText))
         {
             _auditText = _currentRawText;
+            _auditFileName = _currentFileName;
         }
     }
 
@@ -812,7 +880,8 @@
 
         try
         {
-            _auditResult = await AnalysisService.AuditComplianceAsync(_auditText, _auditFramework);
+            _auditResult = BASTION.Services.Legal.DocumentAnalysisService.RemoveHashCharacters(
+                await AnalysisService.AuditComplianceAsync(_auditText, _auditFramework));
         }
         catch (Exception ex)
         {
@@ -820,6 +889,111 @@
         }
 
         _isAuditing = false;
+        StateHasChanged();
+    }
+
+    private async Task OnCompareFileASelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        _compareFileNameA = file.Name;
+        _compareError = "";
+        StateHasChanged();
+        try
+        {
+            using var stream = new MemoryStream();
+            await file.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
+            stream.Position = 0;
+
+            var extension = Path.GetExtension(file.Name).ToLower();
+            if (extension == ".pdf")
+            {
+                _compareTextA = AnalysisService.ExtractTextFromPdf(stream);
+            }
+            else if (extension == ".docx")
+            {
+                _compareTextA = AnalysisService.ExtractTextFromDocx(stream);
+            }
+            else
+            {
+                _compareError = "Unsupported file type for Version A. Please upload PDF or DOCX.";
+                _compareFileNameA = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            _compareError = $"Error reading Version A: {ex.Message}";
+            _compareFileNameA = "";
+        }
+        StateHasChanged();
+    }
+
+    private async Task OnCompareFileBSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        _compareFileNameB = file.Name;
+        _compareError = "";
+        StateHasChanged();
+        try
+        {
+            using var stream = new MemoryStream();
+            await file.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
+            stream.Position = 0;
+
+            var extension = Path.GetExtension(file.Name).ToLower();
+            if (extension == ".pdf")
+            {
+                _compareTextB = AnalysisService.ExtractTextFromPdf(stream);
+            }
+            else if (extension == ".docx")
+            {
+                _compareTextB = AnalysisService.ExtractTextFromDocx(stream);
+            }
+            else
+            {
+                _compareError = "Unsupported file type for Version B. Please upload PDF or DOCX.";
+                _compareFileNameB = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            _compareError = $"Error reading Version B: {ex.Message}";
+            _compareFileNameB = "";
+        }
+        StateHasChanged();
+    }
+
+    private async Task OnAuditFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        _auditFileName = file.Name;
+        _auditError = "";
+        StateHasChanged();
+        try
+        {
+            using var stream = new MemoryStream();
+            await file.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
+            stream.Position = 0;
+
+            var extension = Path.GetExtension(file.Name).ToLower();
+            if (extension == ".pdf")
+            {
+                _auditText = AnalysisService.ExtractTextFromPdf(stream);
+            }
+            else if (extension == ".docx")
+            {
+                _auditText = AnalysisService.ExtractTextFromDocx(stream);
+            }
+            else
+            {
+                _auditError = "Unsupported file type. Please upload PDF or DOCX.";
+                _auditFileName = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            _auditError = $"Error reading file: {ex.Message}";
+            _auditFileName = "";
+        }
         StateHasChanged();
     }
 }

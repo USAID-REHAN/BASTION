@@ -1,3 +1,5 @@
+@inject BASTION.Services.Finance.FinShieldSessionState SessionState
+
 <div class="message-analyzer">
     <div class="analyzer-card">
         <div class="analyzer-header">
@@ -427,6 +429,9 @@
                 >= 20 => "Minor phishing indicators detected. Proceed with caution and verify any claims independently.",
                 _ => "No significant phishing indicators detected, but always stay vigilant."
             };
+
+            bool isThreat = analysis.RiskScore >= 50;
+            SessionState.RecordScan(isThreat);
         }
         catch (Exception ex)
         {

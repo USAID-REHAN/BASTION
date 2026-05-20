@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation
 @inject BASTION.Services.Gamification.XpService XpService
 @inject BASTION.Data.BastionDbContext DbContext
+@implements IDisposable
 
 <PageTitle>BASTION — HackerLab</PageTitle>
 
@@ -369,6 +370,15 @@
             {
                 XpService.SetXp(user.CurrentXp);
             }
+
+            var badges = DbContext.UserBadges
+                .Where(b => b.Email == userEmail)
+                .Select(b => b.BadgeName)
+                .ToList();
+            foreach (var badge in badges)
+            {
+                XpService.UnlockBadge(badge);
+            }
         }
     }
     
@@ -451,6 +461,37 @@
                 user.CurrentRank = XpService.CurrentRank;
                 DbContext.SaveChanges();
             }
+
+            if (!DbContext.UserLabCompletions.Any(c => c.Email == userEmail && c.LabId == _selectedDomain))
+            {
+                DbContext.UserLabCompletions.Add(new BASTION.Models.UserLabCompletion
+                {
+                    Email = userEmail,
+                    LabId = _selectedDomain,
+                    CompletedAt = DateTime.UtcNow
+                });
+            }
+
+            if (!string.IsNullOrEmpty(result.Badge) &&
+                !DbContext.UserBadges.Any(b => b.Email == userEmail && b.BadgeName == result.Badge))
+            {
+                DbContext.UserBadges.Add(new BASTION.Models.UserBadge
+                {
+                    Email = userEmail,
+                    BadgeName = result.Badge,
+                    UnlockedAt = DateTime.UtcNow
+                });
+            }
+
+            DbContext.AuditLogs.Add(new BASTION.Models.AuditLog
+            {
+                Email = userEmail,
+                Action = "HackerLab Completion",
+                Timestamp = DateTime.UtcNow,
+                Details = $"Completed domain {_selectedDomain}; XP earned: {result.Xp}; badge: {result.Badge}"
+            });
+
+            DbContext.SaveChanges();
         }
         
         _currentState = State.Debrief;

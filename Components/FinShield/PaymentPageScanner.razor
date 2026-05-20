@@ -1,4 +1,7 @@
 @using BASTION.Services.AI
+@inject BASTION.Services.Finance.FinShieldSessionState SessionState
+@inject BASTION.Data.BastionDbContext DbContext
+@inject BASTION.Services.Auth.AuthService AuthService
 
 <div class="payment-scanner">
     <div class="scanner-card">
@@ -496,6 +499,12 @@
             if (VisionService != null)
             {
                 visionResult = await VisionService.AnalyzeImageAsync(base64);
+                if (visionResult != null)
+                {
+                    bool isThreat = visionResult.RiskScore >= 40;
+                    SessionState.RecordScan(isThreat);
+                    await SavePaymentAnalysis(file.Name, visionResult);
+                }
             }
         }
         catch (Exception ex)
@@ -539,5 +548,27 @@
     private void ReportPhishing()
     {
         // TODO: Implement phishing report functionality
+    }
+
+    private async Task SavePaymentAnalysis(string fileName, VisionAnalysisResult result)
+    {
+        var email = AuthService.CurrentUser?.Email ?? "anonymous";
+        DbContext.PaymentPageAnalyses.Add(new BASTION.Models.PaymentPageAnalysis
+        {
+            Email = email,
+            PageUrl = fileName,
+            VisionReportSummary = result.Summary,
+            RiskScore = result.RiskScore,
+            AnomaliesJson = System.Text.Json.JsonSerializer.Serialize(result.Anomalies),
+            AnalyzedAt = DateTime.UtcNow
+        });
+        DbContext.AuditLogs.Add(new BASTION.Models.AuditLog
+        {
+            Email = email,
+            Action = "FinShield Payment Page Scan",
+            Timestamp = DateTime.UtcNow,
+            Details = $"Analyzed payment screenshot {fileName} with risk score {result.RiskScore}"
+        });
+        await DbContext.SaveChangesAsync();
     }
 }

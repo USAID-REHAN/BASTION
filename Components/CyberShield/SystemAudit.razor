@@ -2,6 +2,8 @@
 
 @inject BASTION.Services.AI.GroqService GroqService
 @inject IJSRuntime JS
+@inject BASTION.Data.BastionDbContext DbContext
+@inject BASTION.Services.Auth.AuthService AuthService
 
 <!-- Diagnostic Command -->
 <div class="cyber-card">
@@ -162,6 +164,7 @@ Be specific, actionable, and reference actual data from the output. If sentinel_
 
         var response = await GroqService.ChatAsync(systemPrompt, userInput);
         ParseReport(response);
+        await SaveSecurityScan(response);
 
         _isAnalyzing = false;
         // Open all sections by default
@@ -240,5 +243,27 @@ Be specific, actionable, and reference actual data from the output. If sentinel_
         public string Title { get; set; } = "";
         public string Icon { get; set; } = "";
         public string Content { get; set; } = "";
+    }
+
+    private async Task SaveSecurityScan(string response)
+    {
+        var email = AuthService.CurrentUser?.Email ?? "anonymous";
+        var summary = response.Length > 500 ? response[..500] + "..." : response;
+        DbContext.SecurityScanLogs.Add(new BASTION.Models.SecurityScanLog
+        {
+            Email = email,
+            ScanType = "System Audit",
+            Target = "Local diagnostic output",
+            Result = summary,
+            CreatedAt = DateTime.UtcNow
+        });
+        DbContext.AuditLogs.Add(new BASTION.Models.AuditLog
+        {
+            Email = email,
+            Action = "CyberShield System Audit",
+            Timestamp = DateTime.UtcNow,
+            Details = $"Analyzed {_pastedOutput.Length:N0} characters of local diagnostic output"
+        });
+        await DbContext.SaveChangesAsync();
     }
 }

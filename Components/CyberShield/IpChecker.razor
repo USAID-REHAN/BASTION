@@ -1,6 +1,8 @@
 <!-- IpChecker.razor — IP input → AbuseIPDB API → result card + risk badge -->
 
 @inject IConfiguration Configuration
+@inject BASTION.Data.BastionDbContext DbContext
+@inject BASTION.Services.Auth.AuthService AuthService
 
 <div class="cyber-card">
     <div class="cyber-card-title">
@@ -175,6 +177,7 @@
                     IpVersion = json.Data.IpVersion,
                     LastReportedAt = json.Data.LastReportedAt
                 };
+                await SaveSecurityScan("IP Reputation", _result.IpAddress, $"{GetRiskLabel()} - abuse score {_result.AbuseScore}%");
             }
             else
             {
@@ -216,6 +219,27 @@
     }
 
     // ── Models ──
+    private async Task SaveSecurityScan(string scanType, string target, string scanResult)
+    {
+        var email = AuthService.CurrentUser?.Email ?? "anonymous";
+        DbContext.SecurityScanLogs.Add(new BASTION.Models.SecurityScanLog
+        {
+            Email = email,
+            ScanType = scanType,
+            Target = target,
+            Result = scanResult,
+            CreatedAt = DateTime.UtcNow
+        });
+        DbContext.AuditLogs.Add(new BASTION.Models.AuditLog
+        {
+            Email = email,
+            Action = "CyberShield IP Scan",
+            Timestamp = DateTime.UtcNow,
+            Details = $"{target}: {scanResult}"
+        });
+        await DbContext.SaveChangesAsync();
+    }
+
     private class IpResult
     {
         public string IpAddress { get; set; } = "";

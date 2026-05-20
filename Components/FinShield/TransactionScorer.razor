@@ -1,3 +1,5 @@
+@inject BASTION.Services.Finance.FinShieldSessionState SessionState
+
 <div class="transaction-scorer">
     <div class="scorer-card">
         <div class="scorer-header">
@@ -418,6 +420,9 @@
             result.Recommendations.Add("🔒 Still maintain normal security practices");
             result.Recommendations.Add("📱 Monitor your account for unauthorized activity");
         }
+
+        bool isThreat = result.TotalRisk >= 70;
+        SessionState.RecordScan(isThreat);
     }
 
     private string GetScoreClass()

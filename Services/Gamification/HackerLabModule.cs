@@ -1,4 +1,6 @@
+using BASTION.Data;
 using BASTION.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace BASTION.Services.Gamification;
 
@@ -7,6 +9,10 @@ namespace BASTION.Services.Gamification;
 /// </summary>
 public class HackerLabModule : IModule
 {
+    private readonly BastionDbContext _db;
+
+    public HackerLabModule(BastionDbContext db) => _db = db;
+
     public string Name => "HackerLab";
     public string Icon => "bi-controller";
     public string RouteUrl => "/hackerlab";
@@ -15,9 +21,22 @@ public class HackerLabModule : IModule
     public string CssClass => "module-hacker";
     public int Order => 6;
 
-    public Task<int> GetScoreAsync(string userId)
+    public async Task<int> GetScoreAsync(string userId)
     {
-        // TODO: Compute HackerLab score based on XP, completed domains, and rank
-        return Task.FromResult(0);
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == userId);
+        if (user == null) return 0;
+
+        var completions = await _db.UserLabCompletions
+            .Where(c => c.Email == userId)
+            .Select(c => c.LabId)
+            .Distinct()
+            .CountAsync();
+        var badges = await _db.UserBadges
+            .Where(b => b.Email == userId)
+            .Select(b => b.BadgeName)
+            .Distinct()
+            .CountAsync();
+
+        return Math.Clamp((user.CurrentXp / 10) + (completions * 8) + (badges * 6), 0, 100);
     }
 }

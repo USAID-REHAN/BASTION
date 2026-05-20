@@ -36,16 +36,28 @@ namespace BASTION.Components.Dashboard
             _activeModules = Modules.Count(m => m.Name != "GateKeeper" && m.Name != "Dashboard");
             
             var userEmail = AuthService.CurrentUser?.Email ?? "";
-            _scansCompleted = DbContext.AuditLogs.Count(l => l.Email == userEmail && (l.Action.Contains("Scan") || l.Action.Contains("Audit")));
+            _scansCompleted =
+                DbContext.UrlScanLogs.Count(l => l.Email == userEmail) +
+                DbContext.PaymentPageAnalyses.Count(l => l.Email == userEmail) +
+                DbContext.SecurityScanLogs.Count(l => l.Email == userEmail) +
+                DbContext.LexGuardAnalyses.Count(l => l.UserId == userEmail);
 
             _protectionScore = 20;
             if (AuthService.CurrentUser != null)
             {
-                _protectionScore += Math.Min(50, XpService.CurrentXp / 10);
+                var currentXp = DbContext.Users
+                    .Where(u => u.Email == userEmail)
+                    .Select(u => u.CurrentXp)
+                    .FirstOrDefault();
+                _protectionScore += Math.Min(50, currentXp / 10);
                 if (AuthService.CurrentUser.MfaEnabled) _protectionScore += 30;
             }
 
-            _userRank = AuthService.IsAdmin ? "Admin" : XpService.CurrentRank;
+            var dbRank = DbContext.Users
+                .Where(u => u.Email == userEmail)
+                .Select(u => u.CurrentRank)
+                .FirstOrDefault();
+            _userRank = AuthService.IsAdmin ? "Admin" : dbRank ?? XpService.CurrentRank;
 
             var logs = DbContext.AuditLogs
                 .Where(l => l.Email == userEmail)

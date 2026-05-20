@@ -12,6 +12,7 @@ namespace BASTION.Services.Auth;
 public class AuthService : IDisposable
 {
     private readonly BastionDbContext _dbContext;
+    private readonly string _connectionString;
     private UserAccount? _currentUser;
     private int? _currentSessionId;
     public event Action? OnAuthStateChanged;
@@ -25,6 +26,7 @@ public class AuthService : IDisposable
     public AuthService(BastionDbContext dbContext)
     {
         _dbContext = dbContext;
+        _connectionString = _dbContext.Database.GetConnectionString() ?? "Data Source=bastion.db";
         OnSessionRevoked += HandleSessionRevoked;
     }
 
@@ -230,7 +232,7 @@ public class AuthService : IDisposable
             try
             {
                 var optionsBuilder = new DbContextOptionsBuilder<BastionDbContext>();
-                optionsBuilder.UseSqlite("Data Source=bastion.db");
+                optionsBuilder.UseSqlite(_connectionString);
                 using var db = new BastionDbContext(optionsBuilder.Options);
                 var session = db.UserSessions.Find(_currentSessionId.Value);
                 if (session != null)

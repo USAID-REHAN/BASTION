@@ -3,6 +3,8 @@
 @using BASTION.Services.AI
 @inject FinShieldService FinShield
 @inject GroqVisionService VisionService
+@inject FinShieldSessionState SessionState
+@implements IDisposable
 
 <div class="finshield-container">
     <div class="finshield-header">
@@ -12,15 +14,15 @@
         </div>
         <div class="header-stats">
             <div class="stat">
-                <div class="stat-value">@totalScansToday</div>
+                <div class="stat-value">@SessionState.TotalScansToday</div>
                 <div class="stat-label">Scans Today</div>
             </div>
             <div class="stat">
-                <div class="stat-value">@threatsBlocked</div>
+                <div class="stat-value">@SessionState.ThreatsBlocked</div>
                 <div class="stat-label">Threats Blocked</div>
             </div>
             <div class="stat">
-                <div class="stat-value">@protectionScore%</div>
+                <div class="stat-value">@SessionState.ProtectionScore%</div>
                 <div class="stat-label">Protection Score</div>
             </div>
         </div>
@@ -197,12 +199,19 @@
 
 @code {
     private string activeTab = "scanner";
-    private int totalScansToday = 24;
-    private int threatsBlocked = 3;
-    private int protectionScore = 92;
+
+    protected override void OnInitialized()
+    {
+        SessionState.OnStateChanged += StateHasChanged;
+    }
 
     private void SelectTab(string tab)
     {
         activeTab = tab;
+    }
+
+    public void Dispose()
+    {
+        SessionState.OnStateChanged -= StateHasChanged;
     }
 }

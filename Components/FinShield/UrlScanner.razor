@@ -1,4 +1,7 @@
 @inject BASTION.Services.Finance.FinShieldService FinShield
+@inject BASTION.Services.Finance.FinShieldSessionState SessionState
+@inject BASTION.Data.BastionDbContext DbContext
+@inject BASTION.Services.Auth.AuthService AuthService
 
 <div class="url-scanner">
     <div class="scanner-card">
@@ -460,6 +463,10 @@
                 Flags = serviceResult.Flags
             };
             scanTime = DateTime.Now;
+
+            bool isThreat = serviceResult.ScamProbabilityScore >= 50;
+            SessionState.RecordScan(isThreat);
+            await SaveScanLog(serviceResult);
         }
         catch (Exception ex)
         {
@@ -488,5 +495,27 @@
     private void AddToBlockList(string url)
     {
         // TODO: Implement block list functionality
+    }
+
+    private async Task SaveScanLog(BASTION.Services.Finance.ScamAnalysisResult serviceResult)
+    {
+        var email = AuthService.CurrentUser?.Email ?? "anonymous";
+        DbContext.UrlScanLogs.Add(new BASTION.Models.UrlScanLog
+        {
+            Email = email,
+            Url = urlInput.Trim(),
+            Verdict = serviceResult.Verdict,
+            RiskScore = serviceResult.ScamProbabilityScore,
+            FlagsJson = System.Text.Json.JsonSerializer.Serialize(serviceResult.Flags),
+            ScannedAt = DateTime.UtcNow
+        });
+        DbContext.AuditLogs.Add(new BASTION.Models.AuditLog
+        {
+            Email = email,
+            Action = "FinShield URL Scan",
+            Timestamp = DateTime.UtcNow,
+            Details = $"Scanned {urlInput.Trim()} with risk score {serviceResult.ScamProbabilityScore}"
+        });
+        await DbContext.SaveChangesAsync();
     }
 }

@@ -64,6 +64,20 @@
         </div>
     }
 
+    @if (_notifications.Any() && !_viewDocsMode && !_viewChatMode)
+    {
+        <div style="display: grid; gap: 10px; margin-bottom: 24px;">
+            @foreach (var notification in _notifications)
+            {
+                <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.22); border-radius: 8px; padding: 10px 14px; color: var(--text-current); font-size: 0.86rem; display: flex; gap: 8px; align-items: center;">
+                    <i class="bi bi-bell" style="color: #60a5fa;"></i>
+                    <span>@notification.Message</span>
+                    <span style="margin-left: auto; color: var(--text-muted); font-size: 0.75rem;">@notification.CreatedAt.ToString("MMM dd")</span>
+                </div>
+            }
+        </div>
+    }
+
     <!-- ── VIEW 1: Support Portal Home ── -->
     @if (!_viewDocsMode && !_viewChatMode && !_viewTicketsMode)
     {
@@ -355,6 +369,7 @@
 
     // Tickets States
     private List<SupportTicket> _tickets = new();
+    private List<Notification> _notifications = new();
     private string _newTicketTitle = string.Empty;
     private string _newTicketDesc = string.Empty;
     private bool _isTicketSubmitting;
@@ -362,6 +377,7 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadTicketsAsync();
+        await LoadNotificationsAsync();
     }
 
     private async Task LoadTicketsAsync()
@@ -387,6 +403,16 @@
         _viewChatMode = false;
         _viewTicketsMode = false;
         _toastMessage = null;
+    }
+
+    private async Task LoadNotificationsAsync()
+    {
+        var currentUserEmail = AuthService.CurrentUser?.Email ?? "guest@bastion.app";
+        _notifications = await DbContext.Notifications
+            .Where(n => n.Email == currentUserEmail)
+            .OrderByDescending(n => n.CreatedAt)
+            .Take(3)
+            .ToListAsync();
     }
 
     private void StartChat()
@@ -481,6 +507,13 @@
             };
 
             DbContext.SupportTickets.Add(ticket);
+            DbContext.Notifications.Add(new Notification
+            {
+                Email = currentUserEmail,
+                Message = $"Support ticket submitted: {title}",
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
             await DbContext.SaveChangesAsync();
 
             // 2. Trigger the AI Agent reasoning loop immediately in the background
@@ -506,11 +539,19 @@
                 }
                 
                 dbTicket.AiResolution = mdResolution;
+                DbContext.Notifications.Add(new Notification
+                {
+                    Email = currentUserEmail,
+                    Message = $"Support ticket resolved: {title}",
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                });
                 await DbContext.SaveChangesAsync();
             }
 
             _toastMessage = "Support ticket processed, investigated, and successfully resolved by BASTION-Sentinel AI!";
             await LoadTicketsAsync();
+            await LoadNotificationsAsync();
         }
         catch (Exception ex)
         {

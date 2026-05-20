@@ -1,4 +1,6 @@
 @inject BASTION.Services.Theme.ThemeService ThemeService
+@inject BASTION.Data.BastionDbContext DbContext
+@inject BASTION.Services.Auth.AuthService AuthService
 @implements IDisposable
 
 <div class="settings-card">
@@ -21,12 +23,45 @@
     protected override void OnInitialized()
     {
         ThemeService.OnThemeChanged += StateHasChanged;
+
+        var email = AuthService.CurrentUser?.Email;
+        if (!string.IsNullOrEmpty(email))
+        {
+            var preference = DbContext.UserPreferences.Find(email);
+            if (preference != null)
+            {
+                _ = ThemeService.SetDarkMode(preference.Theme.Equals("Dark", StringComparison.OrdinalIgnoreCase));
+            }
+        }
     }
 
     private async Task ToggleDarkMode(ChangeEventArgs e)
     {
         var isDark = (bool)(e.Value ?? true);
         await ThemeService.SetDarkMode(isDark);
+        await SavePreference(isDark);
+    }
+
+    private async Task SavePreference(bool isDark)
+    {
+        var email = AuthService.CurrentUser?.Email;
+        if (string.IsNullOrEmpty(email)) return;
+
+        var preference = await DbContext.UserPreferences.FindAsync(email);
+        if (preference == null)
+        {
+            preference = new BASTION.Models.UserPreference
+            {
+                Email = email,
+                AccentColor = ThemeService.AccentColor,
+                NotificationsEnabled = true
+            };
+            DbContext.UserPreferences.Add(preference);
+        }
+
+        preference.Theme = isDark ? "Dark" : "Light";
+        preference.AccentColor = ThemeService.AccentColor;
+        await DbContext.SaveChangesAsync();
     }
 
     public void Dispose()
